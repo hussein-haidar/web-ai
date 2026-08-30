@@ -1,0 +1,13 @@
+[build]
+  # batal build framework; ini static site + Functions
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  # Sediakan alias sederhana untuk fungsi backend
+  from = "/api"
+  to = "/.netlify/functions/api"
+  status = 200

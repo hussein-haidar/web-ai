@@ -1,0 +1,9 @@
+{
+  "name": "web_ai_1",
+  "version": "1.0.0",
+  "description": "AI Assistant web app with Netlify serverless backend for Neon PostgreSQL",
+  "private": true,
+  "dependencies": {
+    "pg": "^8.23.0"
+  }
+}

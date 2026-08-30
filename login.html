@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AI Assistant</title>
+     <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+<link rel="icon" type="image/x-icon" href="ikon/unduhan.ico">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="google-auth-config.js"></script>
+    <script>
+        // Google Sign-In Configuration
+        // Simpan client ID di file google-auth-config.js agar tidak hardcoded di halaman.
+        const GOOGLE_CLIENT_ID = window.GOOGLE_AUTH_CONFIG?.clientId || 'YOUR_GOOGLE_CLIENT_ID_HERE';
+        const GOOGLE_ALLOWED_ORIGINS = window.GOOGLE_AUTH_CONFIG?.allowedOrigins || [];
+    </script>
+    <style>
+        .google-signin-wrap {
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        .google-signin-button {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            min-height: 44px;
+        }
+
+        .google-signin-button > div,
+        .google-signin-button iframe {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container vh-100 d-flex align-items-center justify-content-center">
+        <div class="row w-100 justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-primary text-white text-center">
+                        <h4 class="mb-0">
+                            <i class="bi bi-robot"></i> AI Assistant
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Tab Navigation -->
+                        <ul class="nav nav-tabs" id="authTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">
+                                    <i class="bi bi-person-plus"></i> Register
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Alert Messages -->
+                        <div class="alert alert-danger mt-3 mb-3" id="errorMessage" style="display: none;"></div>
+                        <div class="alert alert-success mt-3 mb-3" id="successMessage" style="display: none;"></div>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content mt-3" id="authTabsContent">
+                            <!-- Login Tab -->
+                            <div class="tab-pane fade show active" id="login" role="tabpanel">
+                                <form id="loginForm">
+                                    <div class="text-center mb-4">
+                                        <div class="mb-3">
+                                            <i class="bi bi-person-circle display-1 text-primary"></i>
+                                        </div>
+                                        <h5 class="card-title">Selamat Datang</h5>
+                                        <p class="text-muted">Masuk untuk mengakses AI Assistant</p>
+                                    </div>
+                                    
+                                    <!-- Google Sign-In Button -->
+                                    <div class="d-grid mb-3">
+                                        <div id="g_id_onload"
+                                            data-client_id=""
+                                            data-callback="handleCredentialResponse">
+                                        </div>
+                                        <div id="googleSignInStatus" class="alert alert-warning small text-start" style="display: none;"></div>
+                                        <div class="google-signin-wrap">
+                                            <div id="googleSignInButton" class="google-signin-button"></div>
+                                            <button type="button" id="googleSignInDisabledButton" class="btn btn-outline-secondary w-100" style="display: none;" disabled>
+                                                <i class="bi bi-google"></i> Login Google belum siap
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-center mb-3">
+                                        <small class="text-muted">atau masuk dengan email</small>
+                                    </div>
+                                    
+                                    <!-- Email/Password Login -->
+                                    <div class="mb-3">
+                                        <label for="loginEmail" class="form-label">
+                                            <i class="bi bi-envelope"></i> Email
+                                        </label>
+                                        <input type="email" class="form-control" id="loginEmail" placeholder="Masukkan email" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="loginPassword" class="form-label">
+                                            <i class="bi bi-lock"></i> Password
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="loginPassword" placeholder="Masukkan password" required>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('loginPassword')">
+                                                <i class="bi bi-eye" id="loginPasswordToggle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="rememberMe">
+                                        <label class="form-check-label" for="rememberMe">
+                                            Ingat saya
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="d-grid mb-3">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-box-arrow-in-right"></i> Masuk
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="text-center">
+                                        <button type="button" class="btn btn-link text-decoration-none" onclick="showForgotPassword()">
+                                            <i class="bi bi-key"></i> Lupa Password?
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Register Tab -->
+                            <div class="tab-pane fade" id="register" role="tabpanel">
+                                <form id="registerForm">
+                                    <div class="text-center mb-4">
+                                        <div class="mb-3">
+                                            <i class="bi bi-person-plus display-1 text-success"></i>
+                                        </div>
+                                        <h5 class="card-title">Buat Akun Baru</h5>
+                                        <p class="text-muted">Daftar untuk mengakses AI Assistant</p>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="registerName" class="form-label">
+                                            <i class="bi bi-person"></i> Nama Lengkap
+                                        </label>
+                                        <input type="text" class="form-control" id="registerName" placeholder="Masukkan nama lengkap" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="registerEmail" class="form-label">
+                                            <i class="bi bi-envelope"></i> Email
+                                        </label>
+                                        <input type="email" class="form-control" id="registerEmail" placeholder="Masukkan email" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="registerPassword" class="form-label">
+                                            <i class="bi bi-lock"></i> Password
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="registerPassword" placeholder="Minimal 6 karakter" required minlength="6">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('registerPassword')">
+                                                <i class="bi bi-eye" id="registerPasswordToggle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="confirmPassword" class="form-label">
+                                            <i class="bi bi-lock-fill"></i> Konfirmasi Password
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="confirmPassword" placeholder="Ulangi password" required>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirmPassword')">
+                                                <i class="bi bi-eye" id="confirmPasswordToggle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="agreeTerms" required>
+                                        <label class="form-check-label" for="agreeTerms">
+                                            Saya setuju dengan <a href="#" onclick="showTerms()">Syarat & Ketentuan</a>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="bi bi-person-plus"></i> Daftar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <div id="loading" class="text-center" style="display: none;">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Sedang memproses...</p>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="text-center">
+                            <a href="index.html" class="btn btn-outline-secondary">
+                                <i class="bi bi-person"></i> Lanjutkan sebagai Tamu
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-key"></i> Lupa Password
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Masukkan username atau nomor telepon yang terdaftar untuk reset password.</p>
+                    
+                    <form id="forgotPasswordForm">
+                        <div class="mb-3">
+                            <label for="resetIdentifier" class="form-label">
+                                <i class="bi bi-person"></i> Username atau Nomor Telepon
+                            </label>
+                            <input type="text" class="form-control" id="resetIdentifier" placeholder="Username atau nomor telepon" required>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-arrow-clockwise"></i> Reset Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS - Gunakan CDN yang valid -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script>
+        // User database (simulasi)
+        let users = JSON.parse(localStorage.getItem('users') || '[]');
+        
+        // Toggle password visibility
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const toggle = document.getElementById(fieldId + 'Toggle');
+            
+            if (field.type === 'password') {
+                field.type = 'text';
+                toggle.className = 'bi bi-eye-slash';
+            } else {
+                field.type = 'password';
+                toggle.className = 'bi bi-eye';
+            }
+        }
+        
+        // Show forgot password modal
+        function showForgotPassword() {
+            const modal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+            modal.show();
+        }
+        
+        // Show terms
+        function showTerms() {
+            alert('Syarat & Ketentuan:\n1. Gunakan aplikasi dengan bijak\n2. Jangan share akun\n3. Hormati pengguna lain');
+        }
+
+        function setGoogleSignInStatus(message, type = 'warning') {
+            const statusEl = document.getElementById('googleSignInStatus');
+            if (!statusEl) return;
+
+            statusEl.className = `alert alert-${type} small text-start`;
+            statusEl.textContent = message;
+            statusEl.style.display = message ? 'block' : 'none';
+        }
+
+        function setGoogleSignInReady(isReady) {
+            const googleButton = document.getElementById('googleSignInButton');
+            const disabledButton = document.getElementById('googleSignInDisabledButton');
+
+            if (googleButton) {
+                googleButton.style.display = isReady ? 'block' : 'none';
+            }
+
+            if (disabledButton) {
+                disabledButton.style.display = isReady ? 'none' : 'block';
+            }
+        }
+
+        function renderGoogleSignInButton() {
+            const googleButton = document.getElementById('googleSignInButton');
+            const googleButtonWidth = Math.min(Math.max(window.innerWidth - 96, 220), 360);
+
+            if (!googleButton || getGoogleSignInSetupIssues().length > 0) return;
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) return;
+
+            googleButton.innerHTML = '';
+            google.accounts.id.renderButton(
+                googleButton,
+                {
+                    theme: 'outline',
+                    size: 'large',
+                    width: googleButtonWidth,
+                    text: 'signin_with',
+                    locale: 'id'
+                }
+            );
+        }
+
+        function isAllowedGoogleOrigin(origin) {
+            return GOOGLE_ALLOWED_ORIGINS.includes(origin);
+        }
+        
+        function getGoogleSignInSetupIssues() {
+            const issues = [];
+            const isConfigured = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE';
+            const isSupportedProtocol = window.location.protocol === 'http:' || window.location.protocol === 'https:';
+            const currentOrigin = window.location.origin;
+
+            if (!isConfigured) {
+                issues.push('Client ID Google belum dikonfigurasi di file google-auth-config.js.');
+            }
+
+            if (!isSupportedProtocol) {
+                issues.push('Google Sign-In hanya aktif saat halaman dibuka lewat http:// atau https://.');
+            }
+
+            if (GOOGLE_ALLOWED_ORIGINS.length === 0) {
+                issues.push('allowedOrigins pada google-auth-config.js masih kosong.');
+            } else if (!isAllowedGoogleOrigin(currentOrigin)) {
+                issues.push(`Origin ${currentOrigin} belum didaftarkan di allowedOrigins pada google-auth-config.js.`);
+            }
+
+            return issues;
+        }
+
+        function formatGoogleSignInSetupMessage(issues) {
+            const details = issues.map((issue, index) => `${index + 1}. ${issue}`).join(' ');
+            return `Login Google belum aktif. ${details}`;
+        }
+
+        // Initialize Google Sign-In Button
+        function initializeGoogleSignInButton() {
+            console.log('Initializing Google Sign-In Button...');
+
+            const setupIssues = getGoogleSignInSetupIssues();
+            if (setupIssues.length > 0) {
+                console.warn('Google Sign-In setup issue:', setupIssues);
+                setGoogleSignInReady(false);
+                setGoogleSignInStatus(`Login Google tidak aktif untuk origin ${window.location.origin}.`, 'warning');
+                return;
+            }
+
+            try {
+                // Initialize Google Identity Services
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleCredentialResponse,
+                    auto_select: false
+                });
+                
+                // Render the Google Sign-In button
+                renderGoogleSignInButton();
+
+                setGoogleSignInReady(true);
+                setGoogleSignInStatus('', 'success');
+                
+            } catch (error) {
+                console.error('Error rendering Google Sign-In button:', error);
+                setGoogleSignInReady(false);
+                setGoogleSignInStatus(
+                    'Google Sign-In gagal diinisialisasi. Pastikan OAuth Client bertipe Web application, origin saat ini sudah masuk ke Authorized JavaScript origins, dan akun Anda terdaftar sebagai Test User bila consent screen masih Testing.'
+                );
+                showError(
+                    'Google Sign-In gagal diinisialisasi. Pastikan OAuth Client bertipe Web application, origin saat ini sudah masuk ke Authorized JavaScript origins, dan akun Anda terdaftar sebagai Test User bila consent screen masih Testing.'
+                );
+            }
+        }
+        
+        // Handle Google Sign-In credential response
+        function handleCredentialResponse(response) {
+            try {
+                console.log('Google Sign-In credential received');
+                
+                // Decode JWT token
+                const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                console.log('User info:', payload);
+                
+                // Simpan data user ke localStorage
+                localStorage.setItem('userToken', response.credential);
+                const existingGoogleUser = users.find(u => u.email === payload.email);
+                const googleUserInfo = {
+                    email: payload.email,
+                    name: payload.name,
+                    picture: payload.picture,
+                    provider: 'google',
+                    createdAt: existingGoogleUser ? existingGoogleUser.createdAt : new Date().toISOString()
+                };
+                localStorage.setItem('userInfo', JSON.stringify(googleUserInfo));
+                if (!existingGoogleUser) {
+                    users.push({
+                        id: Date.now(),
+                        name: payload.name,
+                        email: payload.email,
+                        picture: payload.picture,
+                        provider: 'google',
+                        createdAt: googleUserInfo.createdAt
+                    });
+                    localStorage.setItem('users', JSON.stringify(users));
+                }
+                
+                hideLoading();
+                showSuccess('Login berhasil! Mengalihkan...');
+                
+                // Redirect ke halaman utama
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Error handling Google credential:', error);
+                hideLoading();
+                showError('Terjadi kesalahan saat memproses login Google. Silakan coba lagi.');
+            }
+        }
+        
+        // Login with email/password
+        function login(email, password) {
+            const user = users.find(u => u.email === email && u.password === password);
+            
+            if (user) {
+                const token = 'token_' + Date.now();
+                localStorage.setItem('userToken', token);
+                localStorage.setItem('userInfo', JSON.stringify({
+                    email: user.email,
+                    name: user.name,
+                    picture: user.picture || 'https://picsum.photos/seed/' + user.email + '/40/40.jpg',
+                    createdAt: user.createdAt
+                }));
+                
+                return { success: true };
+            } else {
+                return { success: false, error: 'Email atau password salah' };
+            }
+        }
+        
+        // Register new user
+        function register(name, email, password) {
+            // Check if user already exists
+            if (users.find(u => u.email === email)) {
+                return { success: false, error: 'Email sudah terdaftar' };
+            }
+            
+            // Add new user
+            const newUser = {
+                id: Date.now(),
+                name: name,
+                email: email,
+                password: password,
+                createdAt: new Date().toISOString()
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            return { success: true };
+        }
+        
+        // Forgot password
+        function forgotPassword(identifier) {
+            const user = users.find(u => u.email === identifier || u.phone === identifier);
+            
+            if (user) {
+                // Simulasi reset password
+                return { success: true, message: 'Password reset link telah dikirim' };
+            } else {
+                return { success: false, error: 'User tidak ditemukan' };
+            }
+        }
+        
+        // Show messages
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                document.getElementById('errorMessage').style.display = 'none';
+            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            document.getElementById('successMessage').textContent = message;
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                document.getElementById('successMessage').style.display = 'none';
+            }, 5000);
+        }
+        
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // Check auth status
+        function checkAuthStatus() {
+            const userToken = localStorage.getItem('userToken');
+            if (userToken) {
+                window.location.href = 'index.html';
+            }
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+            
+            // Set Google Client ID dynamically
+            const gIdOnload = document.getElementById('g_id_onload');
+            if (gIdOnload && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+                gIdOnload.setAttribute('data-client_id', GOOGLE_CLIENT_ID);
+            }
+            
+            // Initialize Google Sign-In button (no popup)
+            initializeGoogleSignInButton();
+            window.addEventListener('resize', renderGoogleSignInButton);
+            
+            // Login form
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                showLoading();
+                
+                setTimeout(() => {
+                    const result = login(email, password);
+                    
+                    if (result.success) {
+                        showSuccess('Login berhasil! Mengalihkan...');
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 2000);
+                    } else {
+                        showError(result.error);
+                    }
+                }, 1000);
+            });
+            
+            // Register form
+            document.getElementById('registerForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('registerName').value;
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (password !== confirmPassword) {
+                    showError('Password tidak cocok');
+                    return;
+                }
+                
+                showLoading();
+                
+                setTimeout(() => {
+                    const result = register(name, email, password);
+                    
+                    if (result.success) {
+                        showSuccess('Registrasi berhasil! Silakan login.');
+                        // Switch to login tab
+                        document.getElementById('register-tab').classList.remove('active');
+                        document.getElementById('login-tab').classList.add('active');
+                        document.getElementById('register').classList.remove('show', 'active');
+                        document.getElementById('login').classList.add('show', 'active');
+                    } else {
+                        showError(result.error);
+                    }
+                }, 1000);
+            });
+            
+            // Forgot password form
+            document.getElementById('forgotPasswordForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const identifier = document.getElementById('resetIdentifier').value;
+                
+                showLoading();
+                
+                setTimeout(() => {
+                    const result = forgotPassword(identifier);
+                    
+                    if (result.success) {
+                        showSuccess(result.message);
+                        // Close modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
+                        modal.hide();
+                    } else {
+                        showError(result.error);
+                    }
+                }, 1000);
+            });
+        });
+    </script>
+</body>
+</html>

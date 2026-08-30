@@ -1,0 +1,559 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <title>AI Assistant Web</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<link rel="icon" type="image/x-icon" href="ikon/unduhan.ico">
+<style>
+    /* ===== Navbar Responsif ===== */
+    .navbar {
+        min-height: 56px;
+        padding-top: 0.4rem;
+        padding-bottom: 0.4rem;
+    }
+    .navbar .navbar-brand {
+        font-size: 1.15rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    .navbar .navbar-brand i {
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+    .navbar .brand-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .navbar .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-left: auto;
+    }
+    .navbar .btn-nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        white-space: nowrap;
+    }
+    .navbar .user-avatar {
+        width: 38px;
+        height: 38px;
+        object-fit: cover;
+        border: 2px solid rgba(255, 255, 255, 0.85);
+        transition: transform 0.15s ease;
+    }
+    .navbar .user-avatar:hover {
+        transform: scale(1.08);
+    }
+    .navbar .user-name {
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .navbar .dropdown-menu {
+        min-width: 240px;
+        max-width: calc(100vw - 1.5rem);
+    }
+    .navbar .user-menu-header {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 1rem;
+    }
+    .navbar .user-menu-header img {
+        width: 42px;
+        height: 42px;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+    .navbar .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+    }
+
+    /* Perangkat kecil (mobile) */
+    @media (max-width: 575.98px) {
+        .navbar {
+            min-height: 52px;
+        }
+        .navbar .navbar-brand {
+            font-size: 1rem;
+            gap: 0.4rem;
+            max-width: 55vw;
+        }
+        .navbar .navbar-brand i {
+            font-size: 1.2rem;
+        }
+        .navbar .user-avatar {
+            width: 32px;
+            height: 32px;
+        }
+        .navbar .btn-nav {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .navbar .dropdown-menu {
+            min-width: 220px;
+        }
+    }
+
+    /* Perangkat sedang (tablet) */
+    @media (min-width: 576px) and (max-width: 767.98px) {
+        .navbar .navbar-brand {
+            font-size: 1.05rem;
+        }
+    }
+    /* ===== Dark Mode (Bootstrap 5.3 color modes) ===== */
+    [data-bs-theme="dark"] #chatContainer {
+        background-color: #212529;
+        color: #f8f9fa;
+        border-color: #495057 !important;
+    }
+    [data-bs-theme="dark"] .text-dark {
+        color: #f8f9fa !important;
+    }
+    [data-bs-theme="dark"] .card-header.bg-white {
+        background-color: #2b3035 !important;
+    }
+    [data-bs-theme="dark"] .info-card,
+    [data-bs-theme="dark"] .modal-content {
+        color: #f8f9fa;
+    }
+    [data-bs-theme="dark"] .form-control,
+    [data-bs-theme="dark"] .form-select {
+        background-color: #2b3035;
+        color: #f8f9fa;
+        border-color: #495057;
+    }
+</style>
+</head>
+    <body class="bg-body" id="bodyTheme">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-robot"></i>
+                <span class="brand-text">AI Assistant</span>
+            </a>
+            <div class="nav-actions">
+                <div id="userDisplay" class="d-flex align-items-center" style="display: none;">
+                    <!-- User info akan ditampilkan di sini -->
+                </div>
+                <button id="loginBtn" class="btn btn-outline-light btn-sm btn-nav" onclick="redirectToLogin()">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span class="d-none d-sm-inline">Login</span>
+                </button>
+                <button id="themeToggle" class="btn btn-outline-light btn-sm btn-nav" onclick="toggleDarkMode()" title="Toggle Theme" style="display: none; padding: 4px 8px;">
+                    <i class="bi bi-moon"></i>
+                </button>
+                <button id="logoutBtn" class="btn btn-outline-danger btn-sm btn-nav" style="display: none;" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="d-none d-sm-inline">Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- Chat Card -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-chat-dots"></i> Chat dengan AI
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="chatContainer" class="mb-3" style="height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem;">
+                            <div class="text-center text-muted">
+                                <i class="bi bi-robot display-4"></i>
+                                <p class="mt-2">Mulai percakapan dengan AI Assistant</p>
+                            </div>
+                        </div>
+                        
+                           <!-- API Selection -->
+                        <div class="mb-3" id="apiSelection" style="display: block;">
+                            <label class="form-label">
+                                <i class="bi bi-cpu"></i> Pilih API CHAT:
+                            </label>
+                            <div class="d-flex gap-2">
+                                <button id="btn-groq" class="btn btn-outline-success flex-fill" onclick="showAPISelectionModal()"> API</button>
+                                <button class="btn btn-outline-secondary" onclick="showAPISelectionModal()">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                                                
+                        <div class="mb-3">
+                            <label for="messageInput" class="form-label">
+                                <i class="bi bi-chat-dots"></i> Ketik pesan Anda:
+                            </label>
+                            <div class="input-group input-group-lg mb-3">
+                                <input type="text" class="form-control" id="messageInput" placeholder="Halo, ada yang bisa saya bantu?" autocomplete="off" style="font-size: 16px;">
+                                <button id="voiceChatBtn" class="btn btn-danger btn-lg" onclick="toggleVoiceChat()" title="Voice Chat - Rekam suara, AI jawab dengan suara" style="min-width: auto; padding: 0.5rem 1rem;">
+                                    <i class="bi bi-mic-fill"></i>
+                                </button>
+                                <button class="btn btn-primary btn-lg" onclick="sendMessage()" style="min-width: auto; padding: 0.5rem 1rem;">
+                                    <i class="bi bi-send"></i> <span class="d-none d-md-inline">Ask Chat</span>
+                                </button>
+                            </div>
+                            
+                        
+<label class="form-label">
+                                <i class="bi bi-cpu"></i> Pilih API STT & TTS:
+                            </label>
+                            <!-- Voice Controls -->
+                            <div class="row g-2 mb-3">
+                                <div class="col-12 col-md-6">
+                                    <div class="btn-group w-100" role="group">
+                                        <button class="btn btn-outline-primary flex-fill" onclick="showSTTModal()" title="Speech-to-Text Settings">
+                                            <i class="bi bi-mic"></i> <span class="d-none d-md-inline">STT</span>
+                                        </button>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="showSTTModal()" title="STT Settings">
+                                            <i class="bi bi-gear"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="btn-group w-100" role="group">
+                                        <button class="btn btn-outline-info flex-fill" onclick="showTTSModal()" title="Text-to-Speech Settings">
+                                            <i class="bi bi-volume-up"></i> <span class="d-none d-md-inline">TTS</span>
+                                        </button>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="showTTSModal()" title="TTS Settings">
+                                            <i class="bi bi-gear"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Control Buttons -->
+                        <div class="row mb-3 g-2">
+                                                      <div class="col-md-2 col-6">
+                                <button class="btn btn-outline-primary btn-sm w-100 py-1" onclick="startNewChat()">
+                                    <i class="bi bi-plus-circle"></i> New
+                                </button>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <button class="btn btn-outline-info btn-sm w-100 py-1" onclick="showAboutModal()">
+                                    <i class="bi bi-info-circle"></i> Info
+                                </button>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <button class="btn btn-outline-warning btn-sm w-100 py-1" onclick="showVoiceSettingsModal()">
+                                    <i class="bi bi-mic"></i> Voice
+                                </button>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <button class="btn btn-outline-danger btn-sm w-100 py-1" onclick="configureAPIKeys()">
+                                    <i class="bi bi-key"></i> Keys
+                                </button>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <button class="btn btn-outline-secondary btn-sm w-100 py-1" onclick="showTokenDashboard()">
+                                    <i class="bi bi-bar-chart"></i> Token
+                                </button>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <button class="btn btn-outline-primary btn-sm w-100 py-1" onclick="showDailyUsageDashboard()">
+                                    <i class="bi bi-clock"></i> Harian
+                                </button>
+                            </div>
+                        </div>
+                        
+                     
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div class="card shadow">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-info-circle"></i> Informasi
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Model:</strong> <span id="modelInfo">Llama 3.1 8B / Mistral Tiny</span></p>
+                                <p class="mb-2"><strong>Status:</strong> <span id="apiStatus" class="badge bg-warning">API Mode</span></p>
+                                <p class="mb-2"><strong>API:</strong> <span id="currentAPI" class="badge bg-info">GROQ</span></p>
+                                <div class="mb-2">
+                                    <strong>Token:</strong>
+                                    <div class="progress" style="height: 8px; margin-top: 4px;">
+                                        <div id="groqTokenProgress" class="progress-bar" style="width: 0%; background-color: #198754;" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <span id="groqTokenInfo" class="small ms-2">0 / 12000 tokens (0%)</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Chat History:</strong> <span id="historyCount" class="badge bg-secondary">0 messages</span></p>
+                                <p class="mb-2"><strong>Tutorial:</strong> <a href="TUTORIAL.md" target="_blank" class="badge bg-info"> Lihat Tutorial</a></p>
+                                <p class="mb-2"><strong>Voice:</strong> <span id="voiceStatus" class="badge bg-success"> Ready</span></p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="showChatHistory()">
+                                        <i class="bi bi-clock-history"></i> History Chat
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button class="btn btn-sm btn-outline-warning" onclick="showSpeechHistory()">
+                                        <i class="bi bi-mic"></i> History TTS & STT
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" onclick="refreshAPIStatus()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat History Modal -->
+                <div class="modal fade" id="chatHistoryModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header bg-light">
+                                <h5 class="modal-title text-dark">
+                                    <i class="bi bi-clock-history"></i> Riwayat Chat
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body bg-light">
+                                <div id="chatHistoryList">
+                                    <!-- Chat sessions akan di-load di sini -->
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" onclick="clearAllChatHistory()" title="Hapus Semua Riwayat Chat">
+                                    <i class="bi bi-trash"></i> Hapus Semua
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Speech History Modal -->
+                <div class="modal fade" id="speechHistoryModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-mic"></i> Riwayat TTS & STT
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="downloadSpeechHistory()">
+                                            <i class="bi bi-download"></i> Unduh Semua
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearAllSpeechHistory()">
+                                            <i class="bi bi-trash"></i> Hapus Semua
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="speechHistoryList">
+                                    <!-- Speech history akan di-load di sini -->
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Message Modal -->
+                <div class="modal fade" id="editMessageModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-light">
+                                <h5 class="modal-title text-dark">
+                                    <i class="bi bi-pencil"></i> Edit Pesan
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="editMessageText" class="form-label">Pesan:</label>
+                                    <textarea class="form-control" id="editMessageText" rows="5" placeholder="Edit pesan di sini..."></textarea>
+                                    <input type="hidden" id="editMessageType" value="">
+                                    <input type="hidden" id="editMessageIndex" value="">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                <button type="button" class="btn btn-primary" onclick="saveEditedMessage()">
+                                    <i class="bi bi-check-lg"></i> Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile View Modal -->
+                <div class="modal fade" id="profileViewModal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-person-circle"></i> Profil Saya
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <img id="profileViewAvatar" src="" alt="Avatar" class="rounded-circle mb-3 border border-3 border-light shadow" style="width: 100px; height: 100px; object-fit: cover;">
+                                <h5 id="profileViewName" class="mb-1">-</h5>
+                                <p id="profileViewEmail" class="text-muted mb-3">-</p>
+                                <span id="profileViewProvider" class="badge bg-primary mb-3">Local</span>
+                                <div class="text-start">
+                                    <div class="mb-2"><i class="bi bi-telephone text-muted"></i> <strong>Telepon:</strong> <span id="profileViewPhone">-</span></div>
+                                    <div class="mb-2"><i class="bi bi-card-text text-muted"></i> <strong>Bio:</strong> <span id="profileViewBio">-</span></div>
+                                    <div class="mb-0"><i class="bi bi-calendar text-muted"></i> <strong>Bergabung:</strong> <span id="profileViewJoined">-</span></div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                <button type="button" class="btn btn-primary" onclick="showEditProfileModal()">
+                                    <i class="bi bi-pencil"></i> Edit Profil
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Edit Modal -->
+                <div class="modal fade" id="profileEditModal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header bg-light">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-pencil-square"></i> Edit Profil
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="profileEditForm" onsubmit="saveProfile(event)">
+                                    <div class="text-center mb-3">
+                                        <img id="profileEditAvatarPreview" src="" alt="Avatar" class="rounded-circle mb-2 border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileEditName" class="form-label"><i class="bi bi-person"></i> Nama Lengkap</label>
+                                        <input type="text" class="form-control" id="profileEditName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileEditEmail" class="form-label"><i class="bi bi-envelope"></i> Email</label>
+                                        <input type="email" class="form-control" id="profileEditEmail" required>
+                                        <small id="profileEditEmailHint" class="text-muted"></small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileEditPhone" class="form-label"><i class="bi bi-telephone"></i> Nomor Telepon</label>
+                                        <input type="tel" class="form-control" id="profileEditPhone" placeholder="Opsional">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileEditBio" class="form-label"><i class="bi bi-card-text"></i> Bio</label>
+                                        <textarea class="form-control" id="profileEditBio" rows="3" placeholder="Ceritakan sedikit tentang diri Anda..." maxlength="200"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileEditPicture" class="form-label"><i class="bi bi-image"></i> URL Foto Profil</label>
+                                        <input type="url" class="form-control" id="profileEditPicture" placeholder="https://..." oninput="updateProfileAvatarPreview()">
+                                    </div>
+                                    <div id="profilePasswordSection" class="border-top pt-3 mt-3">
+                                        <h6 class="mb-3"><i class="bi bi-lock"></i> Ubah Password</h6>
+                                        <div class="mb-3">
+                                            <label for="profileEditCurrentPassword" class="form-label">Password Saat Ini</label>
+                                            <input type="password" class="form-control" id="profileEditCurrentPassword" placeholder="Kosongkan jika tidak ingin ubah">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="profileEditNewPassword" class="form-label">Password Baru</label>
+                                            <input type="password" class="form-control" id="profileEditNewPassword" placeholder="Minimal 6 karakter" minlength="6">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="profileEditConfirmPassword" class="form-label">Konfirmasi Password Baru</label>
+                                            <input type="password" class="form-control" id="profileEditConfirmPassword">
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-check-lg"></i> Simpan Perubahan
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="neon-config.js?v=2"></script>
+    <script src="auth.js?v=2"></script>
+    <script src="script.js?v=2"></script>
+    <script>
+        // Initialize auth system when page loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            authSystem.initAuth();
+
+            // Always try to sync keys from Supabase on page load
+            // This ensures cross-device key availability
+            if (typeof syncKeysFromSupabase === 'function') {
+                try {
+                    const synced = await syncKeysFromSupabase();
+                    if (synced) {
+                        console.log(' Keys synced from Supabase on page load');
+                    } else {
+                        console.log(' No keys in Supabase or not logged in');
+                    }
+                } catch(e) {
+                    console.warn('Initial key sync failed:', e);
+                }
+            }
+
+            // Periodic sync every 15s (was 30s) - more aggressive for cross-device
+            setInterval(async function() {
+                if (typeof syncKeysFromSupabase === 'function') {
+                    const stored = localStorage.getItem('aiApiKeys');
+                    const keys = stored ? JSON.parse(stored) : {};
+                    if (!keys.groq && !keys.mistral) {
+                        console.log(' Retrying key sync (no keys found locally)...');
+                        await syncKeysFromSupabase();
+                    }
+                }
+            }, 15000);
+
+            // Check auth status periodically
+            setInterval(authSystem.updateAuthUI, 5000);
+        });
+    </script>
+    </body>
+</html>

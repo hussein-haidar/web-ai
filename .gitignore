@@ -1,0 +1,26 @@
+# Secrets / server-side credentials
+config.php
+.env
+.env.*
+!.env.example
+CREDENTIALS.md
+*.key
+*.pem
+
+# XAMPP / OS temp
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Backup files
+*.bak
+
+# Node / Netlify build artifacts
+node_modules/
+.netlify/
+package-lock.json
