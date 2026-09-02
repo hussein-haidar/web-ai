@@ -152,9 +152,13 @@ function showTokenDashboard() {
 }
 
 // Fungsi: Tampilkan riwayat penggunaan harian
+let _dailyUsageRecords = []; // cache untuk export CSV
+
 function showDailyUsageDashboard() {
     neonLoadDailyUsage(30).then(records => {
-        if (!records || records.length === 0) {
+        _dailyUsageRecords = records || [];
+
+        if (_dailyUsageRecords.length === 0) {
             Swal.fire({
                 title: ' Riwayat Penggunaan Harian',
                 html: `
@@ -168,58 +172,59 @@ function showDailyUsageDashboard() {
             });
             return;
         }
-        
+
         // Hitung total dan rata-rata
-        const totalGroq = records.reduce((sum, r) => sum + (r.groq_used || 0), 0);
-        const totalMistral = records.reduce((sum, r) => sum + (r.mistral_used || 0), 0);
+        const totalGroq = records.reduce((sum, r) => sum + (Number(r.groq_used) || 0), 0);
+        const totalMistral = records.reduce((sum, r) => sum + (Number(r.mistral_used) || 0), 0);
         const avgGroq = (totalGroq / records.length).toFixed(0);
         const avgMistral = (totalMistral / records.length).toFixed(0);
-        
-        // Buat grafik sederhana dengan bar chart
-        const dates = records.map(r => new Date(r.date).toLocaleDateString('id-ID', { weekday: 'short' }));
-        const groqData = records.map(r => r.groq_used);
-        const mistralData = records.map(r => r.mistral_used);
-        
+
         let html = `
             <div class="text-start">
                 <h6> Riwayat Penggunaan Harian (30 Hari Terakhir)</h6>
                 <p>Total Penggunaan Groq: <strong>${totalGroq} tokens</strong> (Rata-rata: ${avgGroq} tokens/hari)</p>
                 <p>Total Penggunaan Mistral: <strong>${totalMistral} tokens</strong> (Rata-rata: ${avgMistral} tokens/hari)</p>
                 <hr>
-                <p>Detail per hari:</p>
-                <div class="progress mb-2" style="height: 8px; margin: 4px 0;">
+                <p>Detail per hari (7 hari terakhir):</p>
+                <div class="mb-2" style="margin: 4px 0; min-width: 280px;">
         `;
-        
+
         // Tambahkan bar untuk setiap hari (hanya tampil 7 hari terakhir untuk terlihat)
         const displayDays = records.slice(0, 7);
-        displayDays.forEach((record, i) => {
-            const date = new Date(record.date).toLocaleDateString('id-ID', { weekday: 'short', month: 'short', day: 'numeric' });
-            const groqPct = Math.min(100, Math.round((record.groq_used / 12000) * 100));
-            const mistralPct = Math.min(100, Math.round((record.mistral_used / 12000) * 100));
-            
+        displayDays.forEach((record) => {
+            const dateObj = new Date(record.date + 'T00:00:00');
+            const date = isNaN(dateObj) ? record.date : dateObj.toLocaleDateString('id-ID', { weekday: 'short', month: 'short', day: 'numeric' });
+            const groqUsed = Number(record.groq_used) || 0;
+            const groqPct = Math.min(100, Math.round((groqUsed / 12000) * 100));
+
             html += `
                 <div class="d-flex align-items-center mb-2 small">
-                    <span>${date}</span>
-                    <span class="ms-2" style="width: 30px; font-family: monospace;">${record.groq_used}</span>
-                    <div class="flex-grow-1 ms-2" style="height: 8px; background-color: #e9ecef; border-radius: 3px;">
+                    <span title="${date}" style="width: 112px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${date}</span>
+                    <span style="min-width: 46px; flex-shrink: 0; text-align: right; font-family: monospace; padding-right: 6px;">${groqUsed}</span>
+                    <div class="flex-grow-1" style="min-width: 48px; height: 8px; background-color: #e9ecef; border-radius: 3px; overflow: hidden;">
                         <div style="width: ${groqPct}%; height: 100%; background-color: #3f51b5; border-radius: 3px; transition: width 0.3s;"></div>
                     </div>
                 </div>
             `;
         });
-        
+
         html += `
                 </div>
-                <button class="btn btn-sm btn-outline-secondary mt-2" onclick="document.getElementById('exportUsageBtn').click()">Export CSV</button>
-                <input type="file" id="exportUsageBtn" style="display: none;" accept=".csv" onclick="exportUsageCSV(records)">
+                <div class="d-flex gap-2 mt-2">
+                    <a class="btn btn-sm btn-outline-secondary" href="#" onclick="exportUsageCSV(); return false;">
+                        <i class="bi bi-download"></i> Export CSV</a>
+                </div>
             </div>
         `;
-        
+
+        // Lebar modal responsif: tidak pernah melebihi viewport (cek HP)
+        const modalWidth = Math.min(window.innerWidth - 32, 560) + 'px';
+
         Swal.fire({
             title: ' Riwayat Penggunaan Harian',
             html: html,
             confirmButtonText: 'Tutup',
-            width: '500px',
+            width: modalWidth,
             onAfterOpen: () => {
                 // Initialize tooltips
                 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -241,8 +246,13 @@ function showDailyUsageDashboard() {
 
 // Fungsi: Export ke CSV
 function exportUsageCSV(records) {
+    const data = records || _dailyUsageRecords || [];
+    if (!data.length) {
+        Swal.fire('Belum ada data', 'Tidak ada data untuk di-export.', 'info');
+        return;
+    }
     let csv = 'Tanggal,Groq Used,Mistral Used,Groq Remaining,Mistral Remaining\n';
-    records.forEach(record => {
+    data.forEach(record => {
         const date = new Date(record.date).toLocaleDateString('id-ID');
         csv += `"${date}",${record.groq_used},${record.mistral_used},${record.groq_remaining || ''},${record.mistral_remaining || ''}\n`;
     });
