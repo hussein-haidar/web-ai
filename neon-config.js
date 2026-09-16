@@ -18,33 +18,91 @@
 
 // Internal helper: POST JSON to backend (api.php or Netlify function)
 async function _neonPost(action, extra = {}) {
-    const user = window.authSystem?.getCurrentUser?.();
-    const email = user?.email;
-    if (!email) {
+    const token = localStorage.getItem('userToken');
+    if (!token) {
         const err = new Error('not_authenticated');
         err.notAuth = true;
         throw err;
     }
-    const body = Object.assign({ action, user_email: email }, extra);
+    const body = Object.assign({ action }, extra);
     const res = await fetch(window.__NEON_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token,
+        },
         body: JSON.stringify(body)
     });
     let data = null;
     try {
         data = await res.json();
     } catch (e) {
-        // Non-JSON response (e.g. PHP fatal/HTML error page)
         data = null;
     }
     if (!res.ok) {
-        const err = new Error((data && data.message) ? data.message : ('Neon API error ' + res.status));
+        const errMsg = (data && data.error) || ('Neon API error ' + res.status);
+        // Sesi kedaluwarsa / JWT tidak valid → paksa logout client
+        if (res.status === 401 && (data?.error === 'invalid_token' || data?.error === 'unauthorized')) {
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('userInfo');
+            window.location.href = 'login.html';
+        }
+        const err = new Error(data && data.message ? data.message : errMsg);
         err.status = res.status;
         err.data = data;
         throw err;
     }
     return data;
+}
+
+// =============================================
+// Server-Side Provider Proxy (keys never reach browser)
+// The real Groq/Mistral keys stay in the DB. The backend
+// (api.php / Netlify function) attaches them and forwards.
+// All responses are JSON. Chat/STT/validate return {ok,status,data}
+// where data is the provider JSON; TTS returns {ok,status,base64,mimeType}.
+// =============================================
+
+async function neonProxyChat(provider, model, messages, max_tokens = 1024, temperature = 0.7) {
+    return _neonPost('proxyChat', { provider, model, messages, max_tokens, temperature });
+}
+
+async function neonProxyTts(provider, text, model, voice, response_format = 'wav') {
+    return _neonPost('proxyTts', { provider, text, model, voice, response_format });
+}
+
+async function neonProxyStt(provider, base64Audio, model, filename = 'recording.webm', mimeType = 'audio/webm') {
+    return _neonPost('proxyStt', {
+        provider,
+        base64: base64Audio,
+        model,
+        filename,
+        mime_type: mimeType,
+    });
+}
+
+async function neonValidateKey(provider) {
+    return _neonPost('validateKey', { provider });
+}
+
+// base64 <-> Blob helpers (TTS returns base64 audio, STT sends base64 audio)
+function base64ToBlob(base64, mimeType = 'audio/wav') {
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: mimeType });
+}
+
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result;
+            resolve(typeof dataUrl === 'string' ? (dataUrl.split(',')[1] || '') : '');
+        };
+        reader.onerror = () => reject(new Error('Gagal membaca audio sebagai base64.'));
+        reader.readAsDataURL(blob);
+    });
 }
 
 // =============================================

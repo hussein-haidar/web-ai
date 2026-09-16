@@ -4,6 +4,7 @@
   "description": "AI Assistant web app with Netlify serverless backend for Neon PostgreSQL",
   "private": true,
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "pg": "^8.23.0"
   }
 }

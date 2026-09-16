@@ -481,58 +481,24 @@ function updateMainAPIStatus(results) {
 // In-memory cache for API keys (replaces localStorage for security)
 let _apiKeysCache = { groq: '', mistral: '' };
 
-// Load API keys from Neon only (no localStorage)
+// Load API key PRESENCE from Neon only (keys never leave the server)
 async function loadAPIKeys() {
     try {
-        let keys = {};
+        let hasGroq = false;
+        let hasMistral = false;
 
         // Load from Neon (cloud-first)
         if (typeof neonLoadKeys === 'function') {
             const neonKeys = await neonLoadKeys();
-            if (neonKeys && neonKeys.groq) {
-                keys.groq = neonKeys.groq;
-                console.log(' API keys loaded from Neon');
-            }
-            if (neonKeys && neonKeys.mistral) {
-                keys.mistral = neonKeys.mistral;
-                console.log(' Mistral API keys loaded from Neon');
-            }
+            hasGroq    = !!(neonKeys && neonKeys.groq);
+            hasMistral = !!(neonKeys && neonKeys.mistral);
         }
 
-        // Cache in memory (no localStorage)
-        _apiKeysCache = { groq: keys.groq || '', mistral: keys.mistral || '' };
-
-        // Apply Groq key to configs
-        if (_apiKeysCache.groq && _apiKeysCache.groq.startsWith('gsk_')) {
-            try {
-                const groqKey = stripBearerPrefix(_apiKeysCache.groq);
-                if (typeof API_CONFIG !== 'undefined' && API_CONFIG?.groq?.headers) {
-                    API_CONFIG.groq.headers.Authorization = buildAuthorizationHeader(groqKey);
-                }
-                if (typeof VOICE_API_CONFIG !== 'undefined') {
-                    if (VOICE_API_CONFIG.groq_tts?.headers) VOICE_API_CONFIG.groq_tts.headers.Authorization = buildAuthorizationHeader(groqKey);
-                    if (VOICE_API_CONFIG.groq_stt?.headers) VOICE_API_CONFIG.groq_stt.headers.Authorization = buildAuthorizationHeader(groqKey);
-                }
-            } catch (e) {
-                console.warn('Error applying Groq key:', e);
-            }
-        }
-
-        // Apply Mistral key to configs
-        if (_apiKeysCache.mistral && _apiKeysCache.mistral.length > 0) {
-            try {
-                const mistralKey = stripBearerPrefix(_apiKeysCache.mistral);
-                if (typeof API_CONFIG !== 'undefined' && API_CONFIG?.mistral?.headers) {
-                    API_CONFIG.mistral.headers.Authorization = buildAuthorizationHeader(mistralKey);
-                }
-                if (typeof VOICE_API_CONFIG !== 'undefined') {
-                    if (VOICE_API_CONFIG.mistral_tts?.headers) VOICE_API_CONFIG.mistral_tts.headers.Authorization = buildAuthorizationHeader(mistralKey);
-                    if (VOICE_API_CONFIG.mistral_stt?.headers) VOICE_API_CONFIG.mistral_stt.headers.Authorization = buildAuthorizationHeader(mistralKey);
-                }
-            } catch (e) {
-                console.warn('Error applying Mistral key:', e);
-            }
-        }
+        // Cache presence in memory (no localStorage, no actual keys)
+        _apiKeysCache = {
+            groq: hasGroq ? 'configured' : '',
+            mistral: hasMistral ? 'configured' : ''
+        };
 
         if (!_apiKeysCache.groq) console.warn(' Groq API key belum dikonfigurasi.');
         if (!_apiKeysCache.mistral) console.warn(' Mistral API key belum dikonfigurasi.');
@@ -541,9 +507,9 @@ async function loadAPIKeys() {
         updateModelInfo();
         loadVoiceSettings();
 
-        console.log(' API keys loaded from Neon (no localStorage)');
+        console.log(' API key status loaded from Neon (keys stay server-side)');
     } catch (error) {
-        console.error('Error loading API keys:', error);
+        console.error('Error loading API key status:', error);
     }
 }
 
@@ -555,12 +521,14 @@ async function syncKeysFromSupabase() {
     try {
         const cloudKeys = await neonLoadKeys();
         if (cloudKeys && (cloudKeys.groq || cloudKeys.mistral)) {
-            // Update in-memory cache
-            _apiKeysCache = { groq: cloudKeys.groq || '', mistral: cloudKeys.mistral || '' };
-            applyKeysToConfig(cloudKeys);
+            // Update in-memory presence cache (keys stay server-side)
+            _apiKeysCache = {
+                groq: cloudKeys.groq ? 'configured' : '',
+                mistral: cloudKeys.mistral ? 'configured' : ''
+            };
             updateAPIStatus();
             updateModelInfo();
-            console.log(' Keys synced from Neon (no localStorage)');
+            console.log(' Keys presence synced from Neon (no localStorage)');
             return true;
         } else {
             console.log(' No keys found in Neon for this user');
@@ -572,26 +540,11 @@ async function syncKeysFromSupabase() {
 }
 
 function applyKeysToConfig(keys) {
-    if (keys.groq && keys.groq.startsWith('gsk_')) {
-        const groqKey = stripBearerPrefix(keys.groq);
-        if (typeof API_CONFIG !== 'undefined' && API_CONFIG?.groq?.headers) {
-            API_CONFIG.groq.headers.Authorization = buildAuthorizationHeader(groqKey);
-        }
-        if (typeof VOICE_API_CONFIG !== 'undefined') {
-            if (VOICE_API_CONFIG.groq_tts?.headers) VOICE_API_CONFIG.groq_tts.headers.Authorization = buildAuthorizationHeader(groqKey);
-            if (VOICE_API_CONFIG.groq_stt?.headers) VOICE_API_CONFIG.groq_stt.headers.Authorization = buildAuthorizationHeader(groqKey);
-        }
-    }
-    if (keys.mistral && keys.mistral.length > 0) {
-        const mistralKey = stripBearerPrefix(keys.mistral);
-        if (typeof API_CONFIG !== 'undefined' && API_CONFIG?.mistral?.headers) {
-            API_CONFIG.mistral.headers.Authorization = buildAuthorizationHeader(mistralKey);
-        }
-        if (typeof VOICE_API_CONFIG !== 'undefined') {
-            if (VOICE_API_CONFIG.mistral_tts?.headers) VOICE_API_CONFIG.mistral_tts.headers.Authorization = buildAuthorizationHeader(mistralKey);
-            if (VOICE_API_CONFIG.mistral_stt?.headers) VOICE_API_CONFIG.mistral_stt.headers.Authorization = buildAuthorizationHeader(mistralKey);
-        }
-    }
+    // Keys remain server-side; only refresh their presence status.
+    _apiKeysCache = {
+        groq: (keys && keys.groq) ? 'configured' : '',
+        mistral: (keys && keys.mistral) ? 'configured' : ''
+    };
 }
 
 // Mobile optimizations
@@ -2355,18 +2308,8 @@ const CHAT_API_MODELS = {
 };
 
 function hasConfiguredApiKey(apiName) {
-    const authHeader = API_CONFIG?.[apiName]?.headers?.Authorization || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-
-    if (apiName === 'groq') {
-        // Groq key must start with gsk_ and be reasonably long
-        return token.startsWith('gsk_') && token.length > 20;
-    } else if (apiName === 'mistral') {
-        // Mistral keys are usually non-empty; avoid rejecting valid keys due to length assumptions
-        return token.length > 0;
-    }
-
-    return token.length > 0;
+    // Keys live server-side; check in-memory presence cache.
+    return !!(_apiKeysCache && _apiKeysCache[apiName]);
 }
 
 function stripBearerPrefix(rawKey) {
@@ -2392,7 +2335,8 @@ function escapeHtml(str) {
 }
 
 function getStoredApiKey(apiName) {
-    return stripBearerPrefix(_apiKeysCache?.[apiName] || '');
+    // Kunci tidak pernah sampai ke browser: kembalikan penanda kehadiran saja.
+    return _apiKeysCache?.[apiName] ? 'configured' : '';
 }
 
 function buildApiConnectionError(apiName, responseData, fallbackStatus) {
@@ -2505,7 +2449,8 @@ function buildChatMessages(message) {
     return messages;
 }
 
-// Fungsi untuk mendapatkan respons dari API (Robust dengan Retry + Chat Context + Perplexity Token)
+// Fungsi untuk mendapatkan respons dari API (Robust dengan Retry + Chat Context)
+// Keys berada server-side; semua panggilan diproksi lewat backend (proxyChat).
 async function getAPIResponse(message, retryCount = 0) {
     try {
         // Safe access to API_CONFIG
@@ -2513,7 +2458,7 @@ async function getAPIResponse(message, retryCount = 0) {
             console.error(' API_CONFIG not initialized yet');
             return await fallbackToGroq(message, 'API_CONFIG not initialized');
         }
-        
+
         const config = API_CONFIG[selectedAPI];
         if (!config) {
             console.error(' API config not found for:', selectedAPI);
@@ -2521,188 +2466,102 @@ async function getAPIResponse(message, retryCount = 0) {
         }
 
         if (!hasConfiguredApiKey(selectedAPI)) {
-            console.error(` API key for ${selectedAPI} not configured`);
+            console.error(` API key ${selectedAPI} not configured (server-side)`);
             if (selectedAPI !== 'groq' && hasConfiguredApiKey('groq')) {
                 return await fallbackToGroq(message, 'Selected API key not configured');
             }
-            return ` API key untuk ${selectedAPI.toUpperCase()} belum dikonfigurasi atau tidak valid. Silakan periksa pengaturan API key Anda.`;
+            return ` API key untuk ${selectedAPI.toUpperCase()} belum dikonfigurasi atau tidak valid. Silakan isi di menu Keys.`;
         }
-        
-        console.log(` Mencoba API: ${selectedAPI} (attempt ${retryCount + 1})`);
-        console.log(' Request URL:', config.url);
+
+        const modelsToTry = [CHAT_API_MODELS[selectedAPI]];
+        if (selectedAPI === 'mistral' && CHAT_API_MODELS.mistralFallbacks) {
+            modelsToTry.push(...CHAT_API_MODELS.mistralFallbacks);
+        }
+        if (selectedAPI === 'groq' && CHAT_API_MODELS.groqFallbacks) {
+            modelsToTry.push(...CHAT_API_MODELS.groqFallbacks);
+        }
+
+        const messages     = buildChatMessages(message);
+        const temperature  = selectedAPI === 'mistral' ? 0.5 : 0.7;
+        let lastErrorMsg   = null;
+
+        console.log(` Mencoba API: ${selectedAPI} (attempt ${retryCount + 1}, ${modelsToTry.length} model(s))`);
         console.log(` Chat history length: ${chatHistory.length} messages`);
-        
-        // Simple headers and URL for all APIs
-        const activeKey = getStoredApiKey(selectedAPI);
-        let requestHeaders = { ...config.headers };
-        requestHeaders.Authorization = buildAuthorizationHeader(activeKey);
-        let requestUrl = config.url;
-        
-        let requestBody = config.body(message);
-        
-        // Add chat context untuk APIs yang support conversation
-        if (selectedAPI !== 'huggingface') {
-            const bodyObj = JSON.parse(requestBody);
-            bodyObj.messages = buildChatMessages(message);
-            
-            // Try different models for OpenRouter if available
-            if (selectedAPI === 'openrouter' && config.fallbackModels && retryCount < config.fallbackModels.length) {
-                const modelToUse = config.fallbackModels[retryCount];
-                console.log(` Trying model: ${modelToUse}`);
-                bodyObj.model = modelToUse;
+
+        for (let mi = 0; mi < modelsToTry.length; mi++) {
+            const modelToUse = modelsToTry[mi];
+            console.log(` Mengirim ke proxyChat dengan model: ${modelToUse}`);
+
+            let res;
+            try {
+                res = await neonProxyChat(selectedAPI, modelToUse, messages, 1024, temperature);
+            } catch (e) {
+                lastErrorMsg = e.message || 'Network error';
+                console.warn(` Proxy ${selectedAPI} error:`, e);
+                continue;
             }
-            
-            requestBody = JSON.stringify(bodyObj);
-        }
-        
-        console.log(' Request body:', requestBody);
-        
-        const response = await fetch(requestUrl, {
-            method: config.method,
-            headers: requestHeaders,
-            body: requestBody,
-            mode: 'cors',
-            credentials: 'omit'
-        });
-        
-        console.log(` Response status: ${response.status} ${response.statusText}`);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(` API ${selectedAPI} HTTP Error:`, {
-                status: response.status,
-                statusText: response.statusText,
-                errorBody: errorText
-            });
-            
-            // Standard retry logic for all APIs
-            
-            // Retry logic untuk OpenRouter dengan model berbeda
-            if (selectedAPI === 'openrouter' && config.fallbackModels && retryCount < config.fallbackModels.length - 1) {
-                console.log(` Retrying ${selectedAPI} with different model...`);
-                return await getAPIResponse(message, retryCount + 1);
+
+            if (res && res.ok && res.data) {
+                const parsedResponse = config.parseResponse(res.data);
+                if (parsedResponse && parsedResponse.trim() !== '') {
+                    console.log(` API ${selectedAPI} success (model ${modelToUse})`);
+                    trackTokenUsage(selectedAPI, parsedResponse);
+                    if (config.retryCount !== undefined) config.retryCount = 0;
+                    return cleanAIText(parsedResponse.trim());
+                }
+                lastErrorMsg = `${selectedAPI} returned empty response`;
+                console.warn(` Model ${modelToUse} mengembalikan respons kosong`);
+                continue;
             }
-            
-            // Retry logic untuk API yang punya retry config
+
+            // Proxy/provider gagal
+            const errBody = (res && (res.error || {})) || {};
+            const errMsg  = errBody?.error?.message || errBody?.message || res?.data?.error?.message || `HTTP ${res?.status || '?'}`;
+            lastErrorMsg  = errMsg;
+            console.error(` API ${selectedAPI} error dengan ${modelToUse}:`, { status: res && res.status, msg: errMsg });
+
+            // Key invalid / belum dikonfigurasi: jangan coba-coba model lain
+            if (res && res.status === 401) {
+                return res.status === 401
+                    ? buildApiConnectionError(selectedAPI, errBody, `HTTP ${res.status}`)
+                    : ` API key ${selectedAPI.toUpperCase()} tidak valid.`;
+            }
+
+            // Model tidak tersedia → lanjut coba model fallback
+            if (/model|not found|deprecated|no such|unknown|does not exist/i.test(errMsg)) {
+                console.log(` Model ${modelToUse} tidak tersedia, mencoba model berikutnya...`);
+                continue;
+            }
+
+            // Error lain dan masih ada model cadangan → coba berikutnya
+            if (mi < modelsToTry.length - 1) continue;
+
+            // Habis semua model → retry / fallback
             if (config.maxRetries && retryCount < config.maxRetries) {
                 console.log(` Retrying ${selectedAPI} (${retryCount + 1}/${config.maxRetries})...`);
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-                return await getAPIResponse(message, retryCount + 1);
-            }
-            
-            // For Mistral, try fallback models if maxRetries exhausted
-            if (selectedAPI === 'mistral' && CHAT_API_MODELS.mistralFallbacks) {
-                const totalFallbacks = CHAT_API_MODELS.mistralFallbacks.length;
-                const fallbackRetries = Math.min(totalFallbacks, 3);
-                for (let fi = 0; fi < fallbackRetries; fi++) {
-                    const modelToUse = CHAT_API_MODELS.mistralFallbacks[fi];
-                    console.log(` Trying Mistral fallback model #${fi + 1}: ${modelToUse}`);
-                    try {
-                        const fallbackBody = JSON.parse(requestBody);
-                        fallbackBody.model = modelToUse;
-                        const fallbackResponse = await fetch(requestUrl, {
-                            method: config.method,
-                            headers: requestHeaders,
-                            body: JSON.stringify(fallbackBody),
-                            mode: 'cors',
-                            credentials: 'omit'
-                        });
-                        if (fallbackResponse.ok) {
-                            const fallbackData = await fallbackResponse.json();
-                            const fallbackParsed = config.parseResponse(fallbackData);
-                            if (fallbackParsed && fallbackParsed.trim() !== '') {
-                                console.log(` Mistral fallback model ${modelToUse} worked!`);
-                                trackTokenUsage(selectedAPI, fallbackParsed);
-                                return cleanAIText(fallbackParsed.trim());
-                            }
-                        } else {
-                            console.log(` Fallback model ${modelToUse} also failed: ${fallbackResponse.status}`);
-                        }
-                    } catch (fbErr) {
-                        console.log(` Fallback model ${modelToUse} error:`, fbErr.message);
-                    }
-                }
-            }
-            
-            // For Groq, try fallback models if primary model fails
-            if (selectedAPI === 'groq' && CHAT_API_MODELS.groqFallbacks) {
-                for (let fi = 0; fi < CHAT_API_MODELS.groqFallbacks.length; fi++) {
-                    const modelToUse = CHAT_API_MODELS.groqFallbacks[fi];
-                    console.log(` Trying Groq fallback model #${fi + 1}: ${modelToUse}`);
-                    try {
-                        const fallbackBody = JSON.parse(requestBody);
-                        fallbackBody.model = modelToUse;
-                        const fallbackResponse = await fetch(requestUrl, {
-                            method: config.method,
-                            headers: requestHeaders,
-                            body: JSON.stringify(fallbackBody),
-                            mode: 'cors',
-                            credentials: 'omit'
-                        });
-                        if (fallbackResponse.ok) {
-                            const fallbackData = await fallbackResponse.json();
-                            const fallbackParsed = config.parseResponse(fallbackData);
-                            if (fallbackParsed && fallbackParsed.trim() !== '') {
-                                console.log(` Groq fallback model ${modelToUse} worked!`);
-                                trackTokenUsage(selectedAPI, fallbackParsed);
-                                return cleanAIText(fallbackParsed.trim());
-                            }
-                        } else {
-                            console.log(` Groq fallback model ${modelToUse} also failed: ${fallbackResponse.status}`);
-                        }
-                    } catch (fbErr) {
-                        console.log(` Groq fallback model ${modelToUse} error:`, fbErr.message);
-                    }
-                }
-            }
-            
-            return await fallbackToGroq(message, `HTTP ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log(` Response data from ${selectedAPI}:`, data);
-        
-        const parsedResponse = config.parseResponse(data);
-        console.log(` Parsed response:`, parsedResponse);
-        
-        if (parsedResponse && parsedResponse.trim() !== '') {
-            console.log(` API ${selectedAPI} success:`, parsedResponse);
-            
-            // Track token usage for this API call
-            trackTokenUsage(selectedAPI, parsedResponse);
-            
-            // Check if response seems incomplete (ends with punctuation suggesting continuation)
-            let finalResponse = parsedResponse.trim();
-            if (finalResponse.endsWith('...') || finalResponse.endsWith('') || 
-                finalResponse.match(/[,-]\s*$/)) {
-                console.log(` Response appears incomplete, attempting to continue...`);
-                // For now, we'll return as-is, but this could be enhanced to request continuation
-            }
-            
-            // Reset retry count on success
-            if (config.retryCount !== undefined) {
-                config.retryCount = 0;
-            }
-            return cleanAIText(finalResponse);
-        } else {
-            console.log(` API ${selectedAPI} returned empty response`);
-            
-            // Retry untuk empty response
-            if (config.maxRetries && retryCount < config.maxRetries) {
-                console.log(` Retrying ${selectedAPI} for empty response (${retryCount + 1}/${config.maxRetries})...`);
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 return await getAPIResponse(message, retryCount + 1);
             }
-            
-            return await fallbackToGroq(message, 'Empty response');
+            return await fallbackToGroq(message, errMsg);
         }
-        
+
+        // Semua model gagal tanpa error spesifik
+        if (lastErrorMsg) {
+            if (config.maxRetries && retryCount < config.maxRetries) {
+                console.log(` Retrying ${selectedAPI} (${retryCount + 1}/${config.maxRetries})...`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                return await getAPIResponse(message, retryCount + 1);
+            }
+            return await fallbackToGroq(message, lastErrorMsg);
+        }
+        return await fallbackToGroq(message, `Tidak ada respons dari ${selectedAPI.toUpperCase()}`);
+
     } catch (error) {
         console.error(` API ${selectedAPI} Exception:`, {
             name: error.name,
             message: error.message
         });
-        
+
         // Retry untuk network errors
         const config = API_CONFIG[selectedAPI];
         if (config && config.maxRetries && retryCount < config.maxRetries) {
@@ -2710,12 +2569,12 @@ async function getAPIResponse(message, retryCount = 0) {
             await new Promise(resolve => setTimeout(resolve, 2000));
             return await getAPIResponse(message, retryCount + 1);
         }
-        
+
         return await fallbackToGroq(message, `Network error: ${error.message}`);
     }
 }
 
-// Fungsi fallback ke Groq
+// Fungsi fallback ke Groq (via proxy server-side)
 async function fallbackToGroq(message, reason) {
     const originalAPI = selectedAPI;
     if (originalAPI === 'groq') {
@@ -2731,28 +2590,27 @@ async function fallbackToGroq(message, reason) {
             return ` Fallback gagal: API_CONFIG belum diinisialisasi`;
         }
 
+        if (!hasConfiguredApiKey('groq')) {
+            console.error(' Groq key belum dikonfigurasi untuk fallback');
+            return ` Fallback ke Groq gagal: Groq API key belum dikonfigurasi.`;
+        }
+
         const groqConfig = API_CONFIG.groq;
-        const bodyObj = JSON.parse(groqConfig.body(message));
-        bodyObj.messages = buildChatMessages(message);
+        const messages = buildChatMessages(message);
+        const res = await neonProxyChat('groq', CHAT_API_MODELS.groq, messages, 1024, 0.7);
 
-        const response = await fetch(groqConfig.url, {
-            method: groqConfig.method,
-            headers: groqConfig.headers,
-            body: JSON.stringify(bodyObj)
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const parsedResponse = groqConfig.parseResponse(data);
+        if (res && res.ok && res.data) {
+            const parsedResponse = groqConfig.parseResponse(res.data);
             if (parsedResponse && parsedResponse.trim() !== '') {
                 console.log(' Fallback ke Groq berhasil');
                 trackTokenUsage('groq', parsedResponse);
-                return cleanAIText(parsedResponse);
+                return cleanAIText(parsedResponse.trim());
             }
         }
 
-        console.error(' Fallback ke Groq gagal:', response.status);
-        return ` Fallback ke Groq gagal: HTTP ${response.status}`;
+        const errMsg = res?.error?.error?.message || res?.error?.message || res?.data?.error?.message || `HTTP ${res?.status || '?'}`;
+        console.error(' Fallback ke Groq gagal:', errMsg);
+        return ` Fallback ke Groq gagal: ${errMsg}`;
     } catch (error) {
         console.error(' Fallback ke Groq exception:', error);
         return ` Fallback ke Groq exception: ${error.message}`;
@@ -2768,7 +2626,7 @@ async function testChatAPI(apiName) {
             console.error(' API_CONFIG not initialized yet in testChatAPI');
             return ' Error';
         }
-        
+
         const config = API_CONFIG[apiName];
         if (!config) {
             console.error(' API config not found for:', apiName);
@@ -2779,101 +2637,75 @@ async function testChatAPI(apiName) {
             return ' Not configured';
         }
 
-        const activeKey = getStoredApiKey(apiName);
-        const requestHeaders = {
-            ...config.headers,
-            Authorization: buildAuthorizationHeader(activeKey)
-        };
-        
-        // For Mistral: first validate the key using /v1/models endpoint
-        if (apiName === 'mistral') {
-            try {
-                console.log(' Validating Mistral key via /v1/models...');
-                const modelsResponse = await fetch('https://api.mistral.ai/v1/models', {
-                    method: 'GET',
-                    headers: requestHeaders,
-                    mode: 'cors',
-                    credentials: 'omit'
-                });
-                console.log(` /v1/models response: ${modelsResponse.status}`);
-                if (!modelsResponse.ok) {
-                    const modelsError = await modelsResponse.json().catch(() => ({}));
-                    console.error(' Mistral key validation failed:', modelsError);
-                    const errMsg = modelsError?.detail || modelsError?.message || `HTTP ${modelsResponse.status}`;
-                    if (modelsResponse.status === 401) {
-                        return ` Auth error (Mistral): Key tidak valid atau expired. Detail: ${errMsg}`;
-                    }
-                    return ` Key check error (Mistral): ${errMsg}`;
+        // Validate key via server (validateKey → daftar model dari provider)
+        try {
+            const vres = await neonValidateKey(apiName);
+            console.log(` ${apiName} key validation:`, vres && vres.ok ? 'ok' : `HTTP ${vres && vres.status}`);
+            if (!vres || !vres.ok) {
+                const vErr = vres?.error?.error?.message || vres?.error?.message || `HTTP ${vres?.status || '?'}`;
+                if (vres && vres.status === 401) {
+                    return ` Auth error (${apiName === 'mistral' ? 'Mistral' : 'Groq'}): Key tidak valid atau expired. Detail: ${vErr}`;
                 }
-                const modelsData = await modelsResponse.json();
-                const modelIds = (modelsData.data || []).map(m => m.id);
-                console.log(' Mistral key valid. Available models:', modelIds.slice(0, 10));
-                
-                // Check if our preferred model is available
-                const preferredModel = CHAT_API_MODELS.mistral;
-                if (modelIds.length > 0 && !modelIds.includes(preferredModel)) {
-                    console.warn(` Model ${preferredModel} not in available models. Trying closest match...`);
-                }
-            } catch (modelErr) {
-                console.error(' Mistral /v1/models check failed:', modelErr);
-                if (modelErr.message && /cors|failed to fetch|network/i.test(modelErr.message)) {
-                    return ` CORS/Network error (Mistral): Tidak dapat mengakses api.mistral.ai dari browser. Detail: ${modelErr.message}`;
-                }
+                return ` Key check error (${apiName === 'mistral' ? 'Mistral' : 'Groq'}): ${vErr}`;
+            }
+            const modelIds = ((vres.data && vres.data.data) || []).map(m => m.id);
+            console.log(` ${apiName} key valid. Available models:`, modelIds.slice(0, 10));
+        } catch (modelErr) {
+            console.error(` ${apiName} key validation failed:`, modelErr);
+            if (modelErr.message && /cors|failed to fetch|network/i.test(modelErr.message)) {
+                return ` CORS/Network error (${apiName}): Tidak dapat mengakses backend. Detail: ${modelErr.message}`;
             }
         }
-        
+
         // Models to try for chat completion test
         const modelsToTry = [CHAT_API_MODELS[apiName]];
         if (apiName === 'mistral' && CHAT_API_MODELS.mistralFallbacks) {
             modelsToTry.push(...CHAT_API_MODELS.mistralFallbacks);
         }
-        
+        if (apiName === 'groq' && CHAT_API_MODELS.groqFallbacks) {
+            modelsToTry.push(...CHAT_API_MODELS.groqFallbacks);
+        }
+
         for (let mi = 0; mi < modelsToTry.length; mi++) {
             const testModel = modelsToTry[mi];
-            const testPayload = {
-                model: testModel,
-                messages: [
-                    { role: 'system', content: 'Reply with OK only.' },
-                    { role: 'user', content: 'Ping' }
-                ],
-                max_tokens: 16,
-                temperature: 0
-            };
-            
-            console.log(` Testing ${apiName} API with model: ${testModel}:`, {
-                url: config.url,
-                hasKey: !!activeKey,
-                keyPrefix: activeKey ? activeKey.substring(0, 8) + '...' : 'none'
-            });
-            
-            const response = await fetch(config.url, {
-                method: config.method,
-                headers: requestHeaders,
-                body: JSON.stringify(testPayload),
-                mode: 'cors',
-                credentials: 'omit'
-            });
-            
-            console.log(` ${apiName} response status (${testModel}):`, response.status, response.statusText);
-            
-            const data = await response.json().catch(() => null);
+            const testMessages = [
+                { role: 'system', content: 'Reply with OK only.' },
+                { role: 'user', content: 'Ping' }
+            ];
 
-            if (!response.ok) {
-                console.error(` ${apiName} API error with ${testModel}:`, { status: response.status, data });
-                // If this is a model-specific error (404, model not found), try next model
-                if (data && data.error && /model|not found|deprecated/i.test(data.error.message || '') && mi < modelsToTry.length - 1) {
+            console.log(` Testing ${apiName} API with model: ${testModel}`);
+
+            let res;
+            try {
+                res = await neonProxyChat(apiName, testModel, testMessages, 16, 0);
+            } catch (e) {
+                console.warn(` Proxy test ${apiName} error:`, e);
+                if (mi < modelsToTry.length - 1) continue;
+                return buildApiConnectionError(apiName, { message: e.message }, 'Network error');
+            }
+
+            const statusCode = res && res.status;
+            const data = res && res.data;
+            console.log(` ${apiName} response status (${testModel}):`, statusCode);
+
+            if (!res || !res.ok) {
+                const errBody = (res && (res.error || {})) || {};
+                const errMsg  = errBody?.error?.message || errBody?.message || (data && data.error && data.error.message) || `HTTP ${statusCode || '?'}`;
+                console.error(` ${apiName} API error with ${testModel}:`, { status: statusCode, msg: errMsg });
+
+                // Model tidak tersedia → coba model berikutnya
+                if (/model|not found|deprecated|no such|unknown/i.test(errMsg) && mi < modelsToTry.length - 1) {
                     console.log(` Model ${testModel} not available, trying next...`);
                     continue;
                 }
-                // If auth error, don't try other models - key is bad
-                if (response.status === 401) {
-                    return buildApiConnectionError(apiName, data, `HTTP ${response.status}`);
+                // Auth error — jangan coba model lain
+                if (statusCode === 401) {
+                    return buildApiConnectionError(apiName, res ? res.error : errMsg, `HTTP ${statusCode}`);
                 }
-                // For other errors, if there are more models to try, continue
                 if (mi < modelsToTry.length - 1) {
                     continue;
                 }
-                return buildApiConnectionError(apiName, data, `HTTP ${response.status}`);
+                return buildApiConnectionError(apiName, res ? res.error : errMsg, `HTTP ${statusCode}`);
             }
 
             if (data && data.choices && data.choices[0] && data.choices[0].message) {
@@ -2895,7 +2727,7 @@ async function testChatAPI(apiName) {
                 return ' Working';
             }
 
-            // If we got a non-OK response but no more models to try
+            // Non-OK respons dan habis model
             if (mi === modelsToTry.length - 1) {
                 return buildApiConnectionError(apiName, data, 'Empty response');
             }
@@ -3018,41 +2850,28 @@ function configureAPIKeys() {
                         mistralLength: mistralKey.length
                     });
                     
-                    // Validate keys
-                    if (groqKey && !groqKey.startsWith('gsk_')) {
-                        Swal.showValidationMessage(' Groq API key harus dimulai dengan "gsk_"');
-                        return false;
-                    }
-                    
-                    // Update Groq configuration
-                    if (!API_CONFIG.groq) {
-                        API_CONFIG.groq = { headers: {} };
-                    }
-                    if (!API_CONFIG.groq.headers) {
-                        API_CONFIG.groq.headers = {};
-                    }
-                    API_CONFIG.groq.headers.Authorization = buildAuthorizationHeader(groqKey);
+                    // Validate keys via proxy before saving
                     if (groqKey) {
-                        console.log(' Groq API key updated');
+                        const v = await neonValidateKey('groq');
+                        if (!v.ok) {
+                            Swal.showValidationMessage(' Groq API key tidak valid: ' + (v.data?.error?.message || 'Unknown error'));
+                            return false;
+                        }
                     }
                     
-                    // Update Mistral configuration
-                    if (!API_CONFIG.mistral) {
-                        API_CONFIG.mistral = { headers: {} };
-                    }
-                    if (!API_CONFIG.mistral.headers) {
-                        API_CONFIG.mistral.headers = {};
-                    }
-                    API_CONFIG.mistral.headers.Authorization = buildAuthorizationHeader(mistralKey);
                     if (mistralKey) {
-                        console.log(' Mistral API key updated');
+                        const v = await neonValidateKey('mistral');
+                        if (!v.ok) {
+                            Swal.showValidationMessage(' Mistral API key tidak valid: ' + (v.data?.error?.message || 'Unknown error'));
+                            return false;
+                        }
                     }
-                    
-                    // Save to Neon only (no localStorage for security)
+
+                    // Save to Neon only (no localStorage for security, keys stay server-side)
                     try {
                         if (typeof neonSaveKeys === 'function') {
                             await neonSaveKeys(groqKey, mistralKey);
-                            _apiKeysCache = { groq: groqKey || '', mistral: mistralKey || '' };
+                            applyKeysToConfig({ groq: groqKey || '', mistral: mistralKey || '' });
                             console.log(' API keys tersimpan ke Neon');
                         } else {
                             console.warn(' Neon tidak tersedia');
@@ -4093,17 +3912,8 @@ let currentAudio = null;
 // Groq Text-to-Speech function
 async function textToSpeechGroq(text, model = 'canopylabs/orpheus-v1-english', voice = 'autumn') {
     try {
-        // Get API key using consistent helper
-        let apiKey = getStoredApiKey('groq');
-        
-        // Fallback: try sync from Supabase if no key found
-        if (!apiKey && typeof syncKeysFromSupabase === 'function') {
-            console.log(' No Groq key found, attempting Supabase sync...');
-            await syncKeysFromSupabase();
-            apiKey = getStoredApiKey('groq');
-        }
-        
-        if (!apiKey) {
+        // Check if Groq API key is configured (presence-based)
+        if (!hasConfiguredApiKey('groq')) {
             throw new Error(' Groq API key not configured for Text-to-Speech. Please configure it in the Keys settings.');
         }
         
@@ -4114,13 +3924,6 @@ async function textToSpeechGroq(text, model = 'canopylabs/orpheus-v1-english', v
         
         // Use the already updated VOICE_API_CONFIG
         const config = VOICE_API_CONFIG.groq_tts;
-        
-        // Verify API key is set
-        if (!config.headers.Authorization || config.headers.Authorization === 'Bearer ') {
-            // Fallback to manually setting the API key
-            config.headers.Authorization = buildAuthorizationHeader(apiKey);
-            console.log(' Manually set API key for TTS (config was empty)');
-        }
         const provider = 'Groq Orpheus';
         
         // Debug logging
@@ -4177,11 +3980,17 @@ async function textToSpeechGroq(text, model = 'canopylabs/orpheus-v1-english', v
             voice = 'autumn'; // Default English voice
         }
 
-        const response = await fetch(config.url, {
-            method: config.method,
-            headers: config.headers,
-            body: config.body(text, model, voice || 'autumn')
-        });
+        // Route TTS through server proxy (keys never reach browser)
+        const proxyResult = await neonProxyTts('groq', text, model, voice || 'autumn');
+        const response = {
+            ok: !!proxyResult.ok,
+            status: proxyResult.status,
+            text: async () => {
+                if (proxyResult.data && typeof proxyResult.data !== 'string') return JSON.stringify(proxyResult.data);
+                return proxyResult.data || '';
+            },
+            blob: async () => base64ToBlob(proxyResult.base64, proxyResult.mimeType || 'audio/wav')
+        };
 
         if (!response.ok) {
             let groqDetail = '';
@@ -4430,17 +4239,6 @@ async function speechToTextGroq(audioBlob, model = 'whisper-large-v3-turbo') {
         const config = VOICE_API_CONFIG.groq_stt;
         const provider = 'Groq Whisper';
 
-        // Ensure API key is set in config
-        let apiKey = getStoredApiKey('groq');
-        if (!apiKey && typeof syncKeysFromSupabase === 'function') {
-            console.log(' No Groq key for STT, attempting Supabase sync...');
-            await syncKeysFromSupabase();
-            apiKey = getStoredApiKey('groq');
-        }
-        if (apiKey) {
-            config.headers.Authorization = buildAuthorizationHeader(apiKey);
-        }
-        
         // Use the configured body function
         const formData = config.body(audioBlob, model);
 
@@ -4454,34 +4252,37 @@ async function speechToTextGroq(audioBlob, model = 'whisper-large-v3-turbo') {
             allowOutsideClick: false
         });
 
-        const response = await fetch(config.url, {
-            method: config.method,
-            headers: config.headers,
-            body: formData
-        });
+        // Route STT through server proxy (keys never reach browser)
+        const proxySttResult = await neonProxyStt(
+            'groq',
+            await blobToBase64(audioBlob),
+            model,
+            'recording.webm',
+            audioBlob.type || 'audio/webm'
+        );
+        Swal.close();
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        if (!proxySttResult.ok) {
+            const proxyErr = proxySttResult.data && (proxySttResult.data.error || proxySttResult.data.message);
+            throw new Error((proxyErr && (proxyErr.message || proxyErr)) || 'No transcription result received');
         }
 
-        const result = await response.json();
-        Swal.close();
-        
-        if (result.text) {
-            // Show success notification
-            Swal.fire({
-                position: 'top-end',
-                icon: 'success',
-                title: ' Groq Audio Transcribed!',
-                showConfirmButton: false,
-                timer: 2000,
-                toast: true
-            });
-            
-            return result.text;
-        } else {
+        const text = proxySttResult.data && proxySttResult.data.text;
+        if (!text) {
             throw new Error('No transcription result received');
         }
+
+        // Show success notification
+        Swal.fire({
+            position: 'top-end',
+            icon: 'success',
+            title: ' Groq Audio Transcribed!',
+            showConfirmButton: false,
+            timer: 2000,
+            toast: true
+        });
+
+        return text;
         
     } catch (error) {
         console.error('Groq Speech-to-Text error:', error);
@@ -4501,51 +4302,24 @@ async function speechToTextGroq(audioBlob, model = 'whisper-large-v3-turbo') {
 // Silent version of speechToTextGroq (no Swal) - for use when caller already shows loading
 async function speechToTextGroqSilent(audioBlob, model = 'whisper-large-v3-turbo') {
     try {
-        const config = VOICE_API_CONFIG.groq_stt;
-        const formData = config.body(audioBlob, model);
+        console.log(' Sending audio to Groq Whisper (via proxy)...', 'size:', audioBlob.size, 'model:', model);
 
-        console.log(' Sending audio to Groq Whisper...', 'size:', audioBlob.size, 'model:', model);
+        // Route STT through server proxy (keys never reach browser)
+        const proxyResult = await neonProxyStt(
+            'groq',
+            await blobToBase64(audioBlob),
+            model,
+            'recording.webm',
+            audioBlob.type || 'audio/webm'
+        );
 
-        // Check API key using consistent helper
-        let apiKey = getStoredApiKey('groq');
-
-        // Fallback: try sync from Supabase if no key found
-        if (!apiKey && typeof syncKeysFromSupabase === 'function') {
-            console.log(' No Groq key for silent STT, attempting Supabase sync...');
-            await syncKeysFromSupabase();
-            apiKey = getStoredApiKey('groq');
+        if (!proxyResult.ok) {
+            console.error(' Groq STT proxy error:', proxyResult.status, proxyResult.data);
+            return null;
         }
 
-        if (!apiKey) {
-            throw new Error('Groq API key belum diisi. Silakan isi di menu Keys.');
-        }
-
-        // Update auth header
-        config.headers.Authorization = buildAuthorizationHeader(apiKey);
-
-        // Fetch with timeout 30 seconds
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-        const response = await fetch(config.url, {
-            method: config.method,
-            headers: config.headers,
-            body: formData,
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(' Groq STT HTTP error:', response.status, errorText);
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-
-        const result = await response.json();
-        console.log(' Groq STT result:', result);
-
-        return result.text || '';
+        const text = proxyResult.data && proxyResult.data.text;
+        return text || '';
 
     } catch (error) {
         console.error(' Groq STT error:', error);
@@ -5705,9 +5479,9 @@ function updateAPIStatus() {
             const currentProvider = selectedAPI || 'groq';
             let hasValidKey = false;
 
-            if (currentProvider === 'groq' && _apiKeysCache.groq && _apiKeysCache.groq.startsWith('gsk_')) {
+            if (currentProvider === 'groq' && hasConfiguredApiKey('groq')) {
                 hasValidKey = true;
-            } else if (currentProvider === 'mistral' && _apiKeysCache.mistral && _apiKeysCache.mistral.length > 0) {
+            } else if (currentProvider === 'mistral' && hasConfiguredApiKey('mistral')) {
                 hasValidKey = true;
             }
 
@@ -5921,10 +5695,8 @@ async function testTTSSimple() {
 // Mistral Text-to-Speech function
 async function textToSpeechMistral(text, model = 'tts-1', voice = 'alloy') {
     try {
-        // Get API key from localStorage (same as chat API)
-        const apiKey = getStoredApiKey('mistral');
-        
-        if (!apiKey) {
+        // Check if Mistral API key is configured (presence-based)
+        if (!hasConfiguredApiKey('mistral')) {
             throw new Error(' Mistral API key not configured for Text-to-Speech. Please configure it in the Keys settings.');
         }
         
@@ -5935,14 +5707,6 @@ async function textToSpeechMistral(text, model = 'tts-1', voice = 'alloy') {
         
         // Use the already updated VOICE_API_CONFIG
         const config = VOICE_API_CONFIG.mistral_tts;
-        
-        // Verify API key is set
-        if (!config.headers.Authorization || config.headers.Authorization === 'Bearer ') {
-            // Fallback to manually setting the API key
-            config.headers.Authorization = buildAuthorizationHeader(apiKey);
-            console.log(' Manually set Mistral API key for TTS (config was empty)');
-        }
-        
         const provider = 'Mistral';
         
         // Debug logging
@@ -5983,30 +5747,27 @@ async function textToSpeechMistral(text, model = 'tts-1', voice = 'alloy') {
             throw new Error('Text is too long (max 4096 characters)');
         }
 
-        const response = await fetch(config.url, {
-            method: config.method,
-            headers: config.headers,
-            body: config.body(text, model, voice || 'default')
-        });
-
-        if (!response.ok) {
-            let errorMessage = `HTTP error! status: ${response.status}`;
+        // Route TTS through server proxy (keys never reach browser)
+        const proxyResult = await neonProxyTts('mistral', text, model, voice || 'default');
+        
+        if (!proxyResult.ok) {
+            let errorMessage = `HTTP error! status: ${proxyResult.status}`;
             
             // Handle specific error cases
-            if (response.status === 400) {
+            if (proxyResult.status === 400) {
                 errorMessage = 'Invalid request - check model name and parameters';
-            } else if (response.status === 401) {
+            } else if (proxyResult.status === 401) {
                 errorMessage = 'Invalid API key - please check your Mistral API key';
-            } else if (response.status === 429) {
+            } else if (proxyResult.status === 429) {
                 errorMessage = 'Rate limit exceeded - please wait and try again';
-            } else if (response.status === 500) {
+            } else if (proxyResult.status === 500) {
                 errorMessage = 'Mistral server error - please try again later';
             }
             
             throw new Error(errorMessage);
         }
 
-        const audioBlob = await response.blob();
+        const audioBlob = base64ToBlob(proxyResult.base64, proxyResult.mimeType || 'audio/mpeg');
         const audioUrl = URL.createObjectURL(audioBlob);
         
         // Stop any currently playing audio
@@ -6120,31 +5881,15 @@ async function speechToText(audioBlob, model = null) {
             provider = 'Mistral Voxtral';
             if (!model) model = 'voxtral-mini-latest';
         } else {
-            // Get API key from localStorage (same as chat API)
-            const apiKey = getStoredApiKey('groq');
-            
-            if (!apiKey) {
+            // Check if Groq API key is configured (presence-based)
+            if (!hasConfiguredApiKey('groq')) {
                 throw new Error(' Groq API key not configured for Speech-to-Text. Please configure it in the Keys settings.');
             }
             
-            // Update config with correct API key
-            config = {
-                ...VOICE_API_CONFIG.groq_stt,
-                headers: {
-                    'Authorization': buildAuthorizationHeader(apiKey)
-                }
-            };
             provider = 'Groq Whisper';
             if (!model) model = 'whisper-large-v3-turbo';
         }
         
-        // Create FormData for audio file upload
-        const formData = new FormData();
-        formData.append('file', audioBlob, 'recording.webm');
-        formData.append('model', model);
-        formData.append('response_format', 'json');
-        // Remove language parameter to use auto-detection
-
         // Show loading indicator
         Swal.fire({
             title: ' Transcribing Audio...',
@@ -6155,16 +5900,21 @@ async function speechToText(audioBlob, model = null) {
             allowOutsideClick: false
         });
 
-        const response = await fetch(config.url, {
-            method: config.method,
-            headers: config.headers,
-            body: formData
-        });
+        // Route STT through server proxy (keys never reach browser)
+        const sttProvider = selectedAPI === 'mistral' ? 'mistral' : 'groq';
+        const proxyResult = await neonProxyStt(
+            sttProvider,
+            await blobToBase64(audioBlob),
+            model,
+            'recording.webm',
+            audioBlob.type || 'audio/webm'
+        );
+        Swal.close();
 
-        if (!response.ok) {
-            let error = await response.json();
-            let errorMessage = `${provider} STT Error: ${error.message}`;
-            if (error.message.includes('No transcription')) {
+        if (!proxyResult.ok) {
+            const errData = proxyResult.data;
+            let errorMessage = `${provider} STT Error: ${errData?.error?.message || errData?.message || proxyResult.status}`;
+            if (errorMessage.includes('No transcription')) {
                 errorMessage += '\n\nPossible causes:\n- Audio file too short or silent\n- API key invalid\n- Network connection issue';
             }
             
@@ -6178,8 +5928,7 @@ async function speechToText(audioBlob, model = null) {
             return null;
         }
 
-        const transcription = await response.json();
-        Swal.close(); // Close loading indicator
+        const transcription = proxyResult.data;
         
         // Show success notification
         Swal.fire({
@@ -6568,62 +6317,33 @@ async function testVoiceSettings() {
 // Test Groq TTS API connectivity and configuration
 async function testGroqTTSAPI() {
     try {
-        const config = VOICE_API_CONFIG.groq_tts;
+        console.log(' Testing Groq TTS API (via proxy validate)...');
         
-        // Test with minimal text - try Orpheus first, fallback to PlayAI
-        const testText = "Hello";
-        let testModel = 'canopylabs/orpheus-v1-english';
-        let testVoice = 'autumn';
-        
-        console.log(' Testing Groq TTS API...');
-        
-        // Ensure API key is in headers
-        const apiKey = getStoredApiKey('groq');
-        if (apiKey && (!config.headers.Authorization || config.headers.Authorization === 'Bearer ')) {
-            config.headers.Authorization = buildAuthorizationHeader(apiKey);
+        // Check presence first
+        const groqConfigured = hasConfiguredApiKey('groq');
+        if (!groqConfigured) {
+            return {
+                status: 'error',
+                message: 'Groq API key not configured'
+            };
         }
         
-        // Try Orpheus model first
-        let response = await fetch(config.url, {
-            method: config.method,
-            headers: { ...config.headers },
-            body: config.body(testText, testModel, testVoice)
-        });
+        // Validate via proxy (server-side check)
+        const validateResult = await neonValidateKey('groq');
         
-        // If Orpheus fails with 404, model not available
-        if (!response.ok && response.status === 404) {
-            console.log(' Orpheus model returned 404, model not available');
-        }
-        
-        if (response.ok) {
-            console.log(' Groq TTS API is working!');
+        if (validateResult.ok) {
+            console.log(' Groq TTS API validated via proxy!');
             return {
                 status: 'success',
                 message: 'Groq TTS API is working correctly',
-                model: testModel
+                model: 'canopylabs/orpheus-v1-english'
             };
         } else {
-            let errorMsg = `HTTP ${response.status}`;
-            
-            if (response.status === 400) {
-                try {
-                    const errorData = await response.json();
-                    errorMsg = errorData.error?.message || 'Invalid request parameters';
-                } catch (e) {
-                    errorMsg = 'HTTP 400 - Bad Request (invalid model or parameters)';
-                }
-            } else if (response.status === 401) {
-                errorMsg = 'Invalid or expired API key';
-            } else if (response.status === 404) {
-                errorMsg = 'TTS model not found (404). Silakan accept terms model di console.groq.com/playground';
-            } else if (response.status === 429) {
-                errorMsg = 'Rate limit exceeded';
-            }
-            
+            const errMsg = validateResult.data?.error?.message || `Validation failed (${validateResult.status})`;
             return {
                 status: 'error',
-                message: errorMsg,
-                httpStatus: response.status
+                message: errMsg,
+                httpStatus: validateResult.status
             };
         }
     } catch (error) {
@@ -6647,46 +6367,55 @@ function updateGroqAPIKey(newApiKey) {
         return false;
     }
     
-    // Update configuration
-    const normalizedGroqKey = stripBearerPrefix(newApiKey);
-    VOICE_API_CONFIG.tts.headers.Authorization = buildAuthorizationHeader(normalizedGroqKey);
-    VOICE_API_CONFIG.stt.headers.Authorization = buildAuthorizationHeader(normalizedGroqKey);
-    
-    // Save to localStorage
-    // Update in-memory cache
-    _apiKeysCache.groq = newApiKey;
-
-    // Save to Neon (cross-device)
+    // Save to Neon (cross-device) - server handles the key
     if (typeof neonSaveKeys === 'function') {
-        neonSaveKeys(_apiKeysCache.groq || '', _apiKeysCache.mistral || '');
-    }
-    
-    console.log(' Groq API key updated (saved to Neon)');
-    
-    // Test the new key
-    testGroqTTSAPI().then(result => {
-        if (result.status === 'success') {
-            Swal.fire({
-                icon: 'success',
-                title: ' API Key Updated',
-                text: 'Groq TTS API is working with the new key!',
-                timer: 3000,
-                showConfirmButton: false
+        neonSaveKeys(newApiKey, _apiKeysCache.mistral || '').then(() => {
+            _apiKeysCache.groq = 'configured';
+            console.log(' Groq API key updated (saved to Neon)');
+            
+            // Test the new key via proxy validate
+            testGroqTTSAPI().then(result => {
+                if (result.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: ' API Key Updated',
+                        text: 'Groq TTS API is working with the new key!',
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: ' API Key Updated but Issues Found',
+                        html: `
+                            <div class="text-start">
+                                <p><strong>Error:</strong> ${result.message}</p>
+                                <p>The API key was saved but there may be configuration issues.</p>
+                            </div>
+                        `,
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
             });
-        } else {
+        }).catch(err => {
+            console.error('Save error:', err);
             Swal.fire({
-                icon: 'warning',
-                title: ' API Key Updated but Issues Found',
-                html: `
-                    <div class="text-start">
-                        <p><strong>Error:</strong> ${result.message}</p>
-                        <p>The API key was saved but there may be configuration issues.</p>
-                    </div>
-                `,
+                icon: 'error',
+                title: ' Save Failed',
+                text: err.message || 'Failed to save API key',
                 confirmButtonColor: '#3085d6'
             });
-        }
-    });
+        });
+    } else {
+        console.warn(' Neon not available');
+        Swal.fire({
+            icon: 'error',
+            title: ' Cloud Storage Unavailable',
+            text: 'Cannot save API key - Neon connection failed',
+            confirmButtonColor: '#3085d6'
+        });
+        return false;
+    }
     
     return true;
 }

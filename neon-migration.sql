@@ -2,7 +2,9 @@
 -- Neon PostgreSQL Migration - AI Assistant
 -- Run this in Neon SQL Editor (console.neon.tech)
 -- No RLS needed: access is via the PHP proxy in api.php,
--- which validates user_email on every request.
+-- which requires a signed JWT (see auth helpers in db.php).
+-- IMPORTANT: run the "auth" section (section 7) after upgrading,
+-- then run the one-time migration in neon-auth-migration.sql
 -- =============================================
 
 -- 1. Chat Sessions table
@@ -88,3 +90,23 @@ CREATE TABLE IF NOT EXISTS profiles (
 );
 
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(user_email);
+
+-- =============================================
+-- 7. Users table (REAL AUTH - server side only)
+-- Passwords are hashed with password_hash() / bcrypt server-side.
+-- provider: 'email' (password login) or 'google' (OAuth, password_hash=NULL)
+-- =============================================
+CREATE TABLE IF NOT EXISTS users (
+    user_email TEXT NOT NULL PRIMARY KEY,           -- normalized lowercase
+    name TEXT,
+    password_hash TEXT,                             -- NULL for google providers
+    provider TEXT DEFAULT 'email',
+    google_sub TEXT,                                -- Google subject id (link account)
+    picture TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub
+    ON users(google_sub) WHERE google_sub IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(user_email);
