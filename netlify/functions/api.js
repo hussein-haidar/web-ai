@@ -11,16 +11,14 @@ const bcryptjs = require('bcryptjs');
 
 const DATABASE_URL = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-me';
-const GOOGLE_CLIENT_ID =
-  process.env.GOOGLE_CLIENT_ID ||
-  '524616697427-kq58hgfoamfe9qsl3o6vqq3uklejj6gl.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+
 const JWT_TTL_REMEMBER = 30 * 24 * 3600;
 const JWT_TTL_DEFAULT = 12 * 3600;
 const DEFAULT_ORIGINS = [
   'http://localhost',
   'http://127.0.0.1',
-  'https://magical-stardust-0e0cd9.netlify.app',
-  'https://startling-squirrel-62e710.netlify.app',
+  'https://earnest-mooncake-d9b531.netlify.app',
 ];
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
