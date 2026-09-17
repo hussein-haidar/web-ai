@@ -264,7 +264,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script>
         // Backend API URL (same origin as this page)
-        const AUTH_URL = 'api.php';
+        // - XAMPP  : 'api.php'  (PHP backend)
+        // - Netlify: '/api'     (redirect -> /.netlify/functions/api)
+        const ON_NETLIFY = /^https?:\/\/([a-z0-9-]+\.)?netlify(\.app)?/i.test(window.location.origin + '/') || window.location.hostname.endsWith('netlify.app');
+        const AUTH_URL = ON_NETLIFY ? '/api' : 'api.php';
 
         async function backendPost(body) {
             const res = await fetch(AUTH_URL, {
