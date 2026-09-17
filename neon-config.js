@@ -400,3 +400,52 @@ async function neonLoadProfile() {
         return null;
     }
 }
+
+// =============================================
+// Notes (notes) - catatan pribadi user
+// =============================================
+
+async function neonSaveAllNotes(notes) {
+    try {
+        await _neonPost('saveAllNotes', { notes: notes || [] });
+        console.log(' All notes saved to Neon');
+        return true;
+    } catch (e) {
+        console.warn(' Failed to save all notes to Neon:', e.message);
+        return false;
+    }
+}
+
+async function neonLoadNotes() {
+    try {
+        const data = await _neonPost('loadNotes');
+        if (!Array.isArray(data)) return null;
+        console.log(` Loaded ${data.length} notes from Neon`);
+        return data;
+    } catch (e) {
+        if (!e.notAuth) console.warn(' Failed to load notes from Neon:', e.message);
+        return null;
+    }
+}
+
+async function neonDeleteNote(noteId) {
+    try {
+        await _neonPost('deleteNote', { note_id: noteId });
+        console.log(' Note deleted from Neon:', noteId);
+        return true;
+    } catch (e) {
+        console.warn(' Failed to delete note from Neon:', e.message);
+        return false;
+    }
+}
+
+async function neonDeleteAllNotes() {
+    try {
+        await _neonPost('deleteAllNotes');
+        console.log(' All notes deleted from Neon');
+        return true;
+    } catch (e) {
+        console.warn(' Failed to delete all notes from Neon:', e.message);
+        return false;
+    }
+}

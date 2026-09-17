@@ -696,6 +696,84 @@ switch ($action) {
         ]);
         break;
 
+    // ---------- notes ----------
+    case 'saveAllNotes':
+        $email = requireAuth($input);
+        $notes = $input['notes'] ?? [];
+        if (!is_array($notes)) {
+            jsonResponse(['error' => 'invalid_notes'], 400);
+        }
+        $stmt = $pdo->prepare("
+            INSERT INTO notes (user_email, note_id, title, content, category, color, pinned, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?::timestamptz, now()), now())
+            ON CONFLICT (user_email, note_id) DO UPDATE
+              SET title = EXCLUDED.title,
+                  content = EXCLUDED.content,
+                  category = EXCLUDED.category,
+                  color = EXCLUDED.color,
+                  pinned = EXCLUDED.pinned,
+                  updated_at = now()
+        ");
+        $pdo->beginTransaction();
+        try {
+            foreach ($notes as $n) {
+                if (!is_array($n) || empty($n['id'])) continue;
+                $stmt->execute([
+                    $email,
+                    (string)$n['id'],
+                    $n['title'] ?? null,
+                    $n['content'] ?? '',
+                    $n['category'] ?? 'Umum',
+                    $n['color'] ?? '',
+                    !empty($n['pinned']) ? true : false,
+                    $n['createdAt'] ?? null,
+                ]);
+            }
+            $pdo->commit();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+        jsonResponse(['success' => true]);
+        break;
+
+    case 'loadNotes':
+        $email = requireAuth($input);
+        $stmt = $pdo->prepare("
+            SELECT note_id, title, content, category, color, pinned, created_at, updated_at
+            FROM notes WHERE user_email = ? ORDER BY pinned DESC, updated_at DESC
+        ");
+        $stmt->execute([$email]);
+        $rows = $stmt->fetchAll();
+        jsonResponse(array_map(function ($r) {
+            $pin = $r['pinned'];
+            return [
+                'id'        => $r['note_id'],
+                'title'     => $r['title'],
+                'content'   => $r['content'],
+                'category'  => $r['category'],
+                'color'     => $r['color'],
+                'pinned'    => ($pin === true || $pin === 't' || $pin === '1' || $pin === 1),
+                'createdAt' => $r['created_at'],
+                'updatedAt' => $r['updated_at'],
+            ];
+        }, $rows));
+        break;
+
+    case 'deleteNote':
+        $email = requireAuth($input);
+        $pdo->prepare("DELETE FROM notes WHERE user_email = ? AND note_id = ?")
+            ->execute([$email, $input['note_id'] ?? '']);
+        jsonResponse(['success' => true]);
+        break;
+
+    case 'deleteAllNotes':
+        $email = requireAuth($input);
+        $pdo->prepare("DELETE FROM notes WHERE user_email = ?")
+            ->execute([$email]);
+        jsonResponse(['success' => true]);
+        break;
+
     default:
         jsonResponse(['error' => 'unknown_action'], 400);
         break;

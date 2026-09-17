@@ -110,3 +110,23 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub
     ON users(google_sub) WHERE google_sub IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(user_email);
+
+-- =============================================
+-- 8. Notes table (catatan pribadi user)
+-- =============================================
+CREATE TABLE IF NOT EXISTS notes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_email TEXT NOT NULL,
+    note_id TEXT NOT NULL,
+    title TEXT DEFAULT 'Tanpa Judul',
+    content TEXT DEFAULT '',
+    category TEXT DEFAULT 'Umum',
+    color TEXT DEFAULT '',
+    pinned BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(user_email, note_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_notes_user ON notes(user_email);
+CREATE INDEX IF NOT EXISTS idx_notes_updated ON notes(user_email, updated_at DESC);

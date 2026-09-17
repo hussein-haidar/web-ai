@@ -703,6 +703,60 @@ module.exports.handler = async (event) => {
           });
         }
 
+        // ---------- notes ----------
+        case 'saveAllNotes': {
+          const email = await requireAuth(event, body, client);
+          const notes = Array.isArray(body.notes) ? body.notes : [];
+          for (const n of notes) {
+            if (!n || !n.id) continue;
+            await client.query(
+              `INSERT INTO notes (user_email, note_id, title, content, category, color, pinned, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8::timestamptz, now()), now())
+               ON CONFLICT (user_email, note_id) DO UPDATE
+                 SET title = EXCLUDED.title, content = EXCLUDED.content, category = EXCLUDED.category,
+                     color = EXCLUDED.color, pinned = EXCLUDED.pinned, updated_at = now()`,
+              [email, String(n.id), n.title || null, n.content || '', n.category || 'Umum',
+               n.color || '', !!n.pinned, n.createdAt || null]
+            );
+          }
+          return send(event, 200, { success: true });
+        }
+
+        case 'loadNotes': {
+          const email = await requireAuth(event, body, client);
+          const r = await client.query(
+            `SELECT note_id, title, content, category, color, pinned, created_at, updated_at
+             FROM notes WHERE user_email = $1 ORDER BY pinned DESC, updated_at DESC`,
+            [email]
+          );
+          const out = r.rows.map((row) => {
+            const pin = row.pinned;
+            return {
+              id: row.note_id,
+              title: row.title,
+              content: row.content,
+              category: row.category,
+              color: row.color,
+              pinned: pin === true || pin === 't' || pin === '1' || pin === 1,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            };
+          });
+          return send(event, 200, out);
+        }
+
+        case 'deleteNote': {
+          const email = await requireAuth(event, body, client);
+          await client.query('DELETE FROM notes WHERE user_email = $1 AND note_id = $2', [email, body.note_id || '']);
+          return send(event, 200, { success: true });
+        }
+
+        case 'deleteAllNotes': {
+          const email = await requireAuth(event, body, client);
+          await client.query('DELETE FROM notes WHERE user_email = $1', [email]);
+          return send(event, 200, { success: true });
+        }
+
         default:
           return send(event, 400, { error: 'unknown_action' });
       }
