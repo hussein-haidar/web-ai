@@ -767,6 +767,13 @@ module.exports.handler = async (event) => {
       return send(event, status, e.payload);
     }
     console.error('Neon API error (' + action + '):', e.message);
-    return send(event, 500, { error: 'database_error', message: 'Terjadi kesalahan server.' });
+    const pgCode = (e && e.code) || (e && e.context && e.context.code) || '';
+    const dbEnvConfigured = !!(process.env.NEON_DATABASE_URL || process.env.DATABASE_URL);
+    return send(event, 500, {
+      error: 'database_error',
+      message: 'Terjadi kesalahan server.',
+      dbEnvConfigured,
+      pgCode: String(pgCode || (e && String(e.message || '').split('\n')[0].slice(0, 80)))
+    });
   }
 };
