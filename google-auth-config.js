@@ -3,8 +3,6 @@ window.GOOGLE_AUTH_CONFIG = {
     allowedOrigins: [
         'http://localhost',
         'http://127.0.0.1',
-        'https://magical-stardust-0e0cd9.netlify.app',
-        'https://startling-squirrel-62e710.netlify.app',
-        'https://relaxed-sopapillas-e89289.netlify.app'
+        'https://earnest-mooncake-d9b531.netlify.app'
     ]
 };
