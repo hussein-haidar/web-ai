@@ -248,7 +248,15 @@ async function httpMultipartRequest(url, fileField, fields, fileData, filename, 
  * then always close the connection.
  */
 async function withClient(fn) {
-  const client = new Client({ connectionString: DATABASE_URL });
+    // Neon mengharuskan TLS; tanpa opsi ssl handshake di Function serverless
+    // sering mandek / kena cold-start Neon → timeout Netlify → 500 database_error.
+    const client = new Client({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000,
+      statement_timeout: 15000,
+      query_timeout: 15000,
+    });
   await client.connect();
   try {
     return await fn(client);
