@@ -86,7 +86,10 @@ async function authBackendGoogleLogin(credential) {
 /** Validate stored token with backend (call on page load). */
 async function authBackendValidateSession() {
     try {
-        await authBackendPost({ action: 'authCheck' });
+        const data = await authBackendPost({ action: 'authCheck' });
+        if (data && data.token) {
+            localStorage.setItem('userToken', data.token);
+        }
         return true;
     } catch {
         return false;

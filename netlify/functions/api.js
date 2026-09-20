@@ -14,7 +14,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-me';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 
 const JWT_TTL_REMEMBER = 30 * 24 * 3600;
-const JWT_TTL_DEFAULT = 12 * 3600;
+const JWT_TTL_DEFAULT = 24 * 3600;
 const DEFAULT_ORIGINS = [
   'http://localhost',
   'http://127.0.0.1',
@@ -373,7 +373,9 @@ module.exports.handler = async (event) => {
           const email = await requireAuth(event, body, client);
           const r = await client.query('SELECT user_email, name, picture, provider, created_at FROM users WHERE user_email = $1', [email]);
           if (!r.rows[0]) return send(event, 404, { error: 'user_not_found' });
-          return send(event, 200, { user: publicUser(r.rows[0]) });
+          // Sliding refresh: issue new token with extended TTL
+          const newToken = jwtCreate({ sub: email }, JWT_TTL_DEFAULT);
+          return send(event, 200, { user: publicUser(r.rows[0]), token: newToken });
         }
 
         case 'changePassword': {

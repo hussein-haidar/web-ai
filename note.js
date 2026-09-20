@@ -19,6 +19,7 @@ const notesApp = {
     searchQuery: '',
     categoryFilter: 'Semua',
     currentEditId: null,
+    unsavedNewId: null,
     initialized: false,
 
     init() {
@@ -26,6 +27,17 @@ const notesApp = {
         this.initialized = true;
         this.loadFromLocal();
         this.syncFromNeon();
+
+        const modalEl = document.getElementById('notesModal');
+        if (modalEl) {
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                if (this.unsavedNewId) {
+                    this.discardUnsaved();
+                    this.renderList();
+                    this.renderCategoryFilter();
+                }
+            });
+        }
     },
 
     // ---------- Storage lokal ----------
@@ -92,8 +104,8 @@ const notesApp = {
             updatedAt: now,
         };
         this.notes.unshift(note);
-        this.persist();
         this.currentEditId = note.id;
+        this.unsavedNewId = note.id;
         this.openEditor(note.id);
     },
 
@@ -122,8 +134,17 @@ const notesApp = {
         });
 
         this.persist();
-        this.renderList();
-        this.renderCategoryFilter();
+        this.unsavedNewId = null;
+        this.closeEditor();
+    },
+
+    discardUnsaved() {
+        if (!this.unsavedNewId) return;
+        const id = this.unsavedNewId;
+        this.unsavedNewId = null;
+        if (this.currentEditId === id) this.currentEditId = null;
+        this.notes = this.notes.filter(n => n.id !== id);
+        this.persist();
     },
 
     deleteNote(id) {
@@ -315,11 +336,12 @@ const notesApp = {
         if (pinned) pinned.checked = !!note.pinned;
 
         if (swatches) {
-            swatches.innerHTML = NOTE_COLORS.map(c => `
-                <button type="button" class="btn btn-sm p-1 note-color ${(note.color || '') === c.value ? 'active' : ''}"
-                    style="background-color: ${c.value || '#f8f9fa'}; border: 2px solid ${(note.color || '') === c.value ? '#0d6efd' : '#dee2e6'}; width: 30px; height: 30px;"
-                    data-color="${c.value}" title="${c.name}" onclick="notesApp.pickColor(this)"></button>
-            `).join('');
+            swatches.innerHTML = NOTE_COLORS.map(c => {
+                const active = (note.color || '') === c.value;
+                return `<button type="button" class="note-color ${active ? 'active' : ''}"
+                    style="background-color: ${c.value || '#ffffff'}; border: 2px solid ${active ? '#0d6efd' : '#dee2e6'}; width: 34px; height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1; color: #212529; margin-right: 8px;"
+                    data-color="${c.value}" title="${c.name}" onclick="notesApp.pickColor(this)">${active ? '<i class="bi bi-check-lg"></i>' : '&nbsp;'}</button>`;
+            }).join('');
         }
 
         // Auto-resize textarea
@@ -337,11 +359,16 @@ const notesApp = {
     },
 
     pickColor(el) {
-        document.querySelectorAll('#noteColorSwatches .note-color').forEach(s => s.classList.remove('active'));
-        el.classList.add('active');
+        document.querySelectorAll('#noteColorSwatches .note-color').forEach(s => {
+            const active = s === el;
+            s.classList.toggle('active', active);
+            s.innerHTML = active ? '<i class="bi bi-check-lg"></i>' : '&nbsp;';
+            s.style.borderColor = active ? '#0d6efd' : '#dee2e6';
+        });
     },
 
     closeEditor() {
+        this.discardUnsaved();
         this.currentEditId = null;
         const listView = document.getElementById('notesListView');
         const editView = document.getElementById('notesEditView');

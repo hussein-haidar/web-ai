@@ -226,7 +226,9 @@ switch ($action) {
         if ($row === null) {
             jsonResponse(['error' => 'user_not_found'], 404);
         }
-        jsonResponse(['user' => publicUser($row)]);
+        // Sliding refresh: issue new token with extended TTL
+        $newToken = jwtCreate(['sub' => $email], JWT_TTL_DEFAULT);
+        jsonResponse(['user' => publicUser($row), 'token' => $newToken]);
         break;
     }
 
