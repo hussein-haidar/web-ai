@@ -120,27 +120,303 @@
             font-size: 1.05rem;
         }
     }
+
     /* ===== Dark Mode (Bootstrap 5.3 color modes) ===== */
+    [data-bs-theme="dark"] {
+        --bs-body-bg: #1a1d21;
+        --bs-body-color: #e9ecef;
+        --bs-card-bg: #212529;
+        --bs-card-border-color: #3d4247;
+        --bs-input-bg: #2b3035;
+        --bs-input-color: #f8f9fa;
+        --bs-input-border-color: #495057;
+        --bs-modal-bg: #212529;
+        --bs-modal-border-color: #3d4247;
+        --bs-dropdown-bg: #2b3035;
+        --bs-dropdown-border-color: #3d4247;
+        --bs-table-color: #e9ecef;
+        --bs-table-border-color: #3d4247;
+    }
+
     [data-bs-theme="dark"] #chatContainer {
-        background-color: #212529;
-        color: #f8f9fa;
-        border-color: #495057 !important;
+        background-color: #1a1d21;
+        color: #e9ecef;
+        border-color: #3d4247 !important;
     }
     [data-bs-theme="dark"] .text-dark {
-        color: #f8f9fa !important;
+        color: #e9ecef !important;
     }
     [data-bs-theme="dark"] .card-header.bg-white {
         background-color: #2b3035 !important;
+        border-color: #3d4247 !important;
+    }
+    [data-bs-theme="dark"] .card.bg-white {
+        background-color: #212529 !important;
+        border-color: #3d4247 !important;
     }
     [data-bs-theme="dark"] .info-card,
     [data-bs-theme="dark"] .modal-content {
-        color: #f8f9fa;
+        background-color: #212529 !important;
+        border-color: #3d4247 !important;
+        color: #e9ecef;
+    }
+    [data-bs-theme="dark"] .modal-header.bg-light,
+    [data-bs-theme="dark"] .modal-body.bg-light,
+    [data-bs-theme="dark"] .modal-footer.bg-light {
+        background-color: #2b3035 !important;
+    }
+    [data-bs-theme="dark"] .modal-header.text-white[style*="gradient"],
+    [data-bs-theme="dark"] .modal-header[style*="gradient"] {
+        background: linear-gradient(135deg, #4c5c9e 0%, #5a4a7a 100%) !important;
     }
     [data-bs-theme="dark"] .form-control,
-    [data-bs-theme="dark"] .form-select {
-        background-color: #2b3035;
+    [data-bs-theme="dark"] .form-select,
+    [data-bs-theme="dark"] .form-control:focus,
+    [data-bs-theme="dark"] .form-select:focus {
+        background-color: #2b3035 !important;
+        color: #f8f9fa !important;
+        border-color: #495057 !important;
+        box-shadow: 0 0 0 0.25rem rgba(77, 100, 236, 0.25) !important;
+    }
+    [data-bs-theme="dark"] .form-control::placeholder {
+        color: #868e96 !important;
+        opacity: 1;
+    }
+    [data-bs-theme="dark"] .input-group-text {
+        background-color: #2b3035 !important;
+        color: #adb5bd !important;
+        border-color: #495057 !important;
+    }
+    [data-bs-theme="dark"] .btn-outline-light {
         color: #f8f9fa;
-        border-color: #495057;
+        border-color: #f8f9fa;
+    }
+    [data-bs-theme="dark"] .btn-outline-light:hover,
+    [data-bs-theme="dark"] .btn-outline-light:focus,
+    [data-bs-theme="dark"] .btn-outline-light:active {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-color: #f8f9fa;
+    }
+    [data-bs-theme="dark"] .btn-outline-secondary {
+        color: #adb5bd;
+        border-color: #6c757d;
+    }
+    [data-bs-theme="dark"] .btn-outline-secondary:hover,
+    [data-bs-theme="dark"] .btn-outline-secondary:focus,
+    [data-bs-theme="dark"] .btn-outline-secondary:active {
+        background-color: #6c757d;
+        color: #fff;
+        border-color: #6c757d;
+    }
+    [data-bs-theme="dark"] .btn-outline-primary {
+        color: #6ea8fe;
+        border-color: #6ea8fe;
+    }
+    [data-bs-theme="dark"] .btn-outline-primary:hover,
+    [data-bs-theme="dark"] .btn-outline-primary:focus,
+    [data-bs-theme="dark"] .btn-outline-primary:active {
+        background-color: #6ea8fe;
+        color: #212529;
+        border-color: #6ea8fe;
+    }
+    [data-bs-theme="dark"] .btn-outline-success {
+        color: #75b798;
+        border-color: #75b798;
+    }
+    [data-bs-theme="dark"] .btn-outline-success:hover,
+    [data-bs-theme="dark"] .btn-outline-success:focus,
+    [data-bs-theme="dark"] .btn-outline-success:active {
+        background-color: #75b798;
+        color: #212529;
+        border-color: #75b798;
+    }
+    [data-bs-theme="dark"] .btn-outline-info {
+        color: #6ed0e0;
+        border-color: #6ed0e0;
+    }
+    [data-bs-theme="dark"] .btn-outline-info:hover,
+    [data-bs-theme="dark"] .btn-outline-info:focus,
+    [data-bs-theme="dark"] .btn-outline-info:active {
+        background-color: #6ed0e0;
+        color: #212529;
+        border-color: #6ed0e0;
+    }
+    [data-bs-theme="dark"] .btn-outline-warning {
+        color: #ffda6a;
+        border-color: #ffda6a;
+    }
+    [data-bs-theme="dark"] .btn-outline-warning:hover,
+    [data-bs-theme="dark"] .btn-outline-warning:focus,
+    [data-bs-theme="dark"] .btn-outline-warning:active {
+        background-color: #ffda6a;
+        color: #212529;
+        border-color: #ffda6a;
+    }
+    [data-bs-theme="dark"] .btn-outline-danger {
+        color: #ea868f;
+        border-color: #ea868f;
+    }
+    [data-bs-theme="dark"] .btn-outline-danger:hover,
+    [data-bs-theme="dark"] .btn-outline-danger:focus,
+    [data-bs-theme="dark"] .btn-outline-danger:active {
+        background-color: #ea868f;
+        color: #212529;
+        border-color: #ea868f;
+    }
+    [data-bs-theme="dark"] .badge.bg-secondary {
+        background-color: #6c757d !important;
+    }
+    [data-bs-theme="dark"] .badge.bg-primary {
+        background-color: #6ea8fe !important;
+        color: #212529 !important;
+    }
+    [data-bs-theme="dark"] .badge.bg-success {
+        background-color: #75b798 !important;
+        color: #212529 !important;
+    }
+    [data-bs-theme="dark"] .badge.bg-info {
+        background-color: #6ed0e0 !important;
+        color: #212529 !important;
+    }
+    [data-bs-theme="dark"] .badge.bg-warning {
+        background-color: #ffda6a !important;
+        color: #212529 !important;
+    }
+    [data-bs-theme="dark"] .badge.bg-danger {
+        background-color: #ea868f !important;
+        color: #212529 !important;
+    }
+    [data-bs-theme="dark"] .card.border {
+        border-color: #3d4247 !important;
+    }
+    [data-bs-theme="dark"] .card.shadow {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3) !important;
+    }
+    [data-bs-theme="dark"] .dropdown-menu {
+        background-color: #2b3035 !important;
+        border-color: #3d4247 !important;
+    }
+    [data-bs-theme="dark"] .dropdown-item {
+        color: #e9ecef !important;
+    }
+    [data-bs-theme="dark"] .dropdown-item:hover,
+    [data-bs-theme="dark"] .dropdown-item:focus {
+        background-color: #3d4247 !important;
+        color: #fff !important;
+    }
+    [data-bs-theme="dark"] .dropdown-divider {
+        border-color: #3d4247 !important;
+    }
+    [data-bs-theme="dark"] .list-group-item {
+        background-color: #2b3035 !important;
+        border-color: #3d4247 !important;
+        color: #e9ecef !important;
+    }
+    [data-bs-theme="dark"] .list-group-item:hover {
+        background-color: #3d4247 !important;
+    }
+    [data-bs-theme="dark"] .text-muted {
+        color: #868e96 !important;
+    }
+    [data-bs-theme="dark"] .border,
+    [data-bs-theme="dark"] .border-top,
+    [data-bs-theme="dark"] .border-bottom,
+    [data-bs-theme="dark"] .border-start,
+    [data-bs-theme="dark"] .border-end {
+        border-color: #3d4247 !important;
+    }
+    [data-bs-theme="dark"] .bg-light {
+        background-color: #2b3035 !important;
+    }
+    [data-bs-theme="dark"] .progress {
+        background-color: #2b3035 !important;
+    }
+    [data-bs-theme="dark"] .note-card {
+        background-color: var(--bs-card-bg) !important;
+        border-color: var(--bs-card-border-color) !important;
+    }
+    [data-bs-theme="dark"] .note-color:not(.active) {
+        border-color: #495057 !important;
+    }
+    [data-bs-theme="dark"] .swal2-popup {
+        background-color: #2b3035 !important;
+        color: #e9ecef !important;
+        border: 1px solid #3d4247 !important;
+    }
+    [data-bs-theme="dark"] .swal2-title,
+    [data-bs-theme="dark"] .swal2-content,
+    [data-bs-theme="dark"] .swal2-html-container {
+        color: #e9ecef !important;
+    }
+    [data-bs-theme="dark"] .swal2-styled.swal2-confirm {
+        background-color: #6ea8fe !important;
+        border-color: #6ea8fe !important;
+    }
+    [data-bs-theme="dark"] .swal2-styled.swal2-cancel {
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+    }
+    [data-bs-theme="dark"] .swal2-close {
+        color: #adb5bd !important;
+    }
+    [data-bs-theme="dark"] .swal2-close:hover {
+        color: #f8f9fa !important;
+    }
+    [data-bs-theme="dark"] .swal2-input,
+    [data-bs-theme="dark"] .swal2-textarea,
+    [data-bs-theme="dark"] .swal2-select,
+    [data-bs-theme="dark"] .swal2-file {
+        background-color: #2b3035 !important;
+        color: #f8f9fa !important;
+        border: 1px solid #495057 !important;
+    }
+    [data-bs-theme="dark"] ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    [data-bs-theme="dark"] ::-webkit-scrollbar-track {
+        background: #1a1d21;
+    }
+    [data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+        background: #495057;
+        border-radius: 4px;
+    }
+    [data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+        background: #6c757d;
+    }
+    [data-bs-theme="dark"] .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+    [data-bs-theme="dark"] .btn-close-white {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+
+    /* Message bubbles - adaptive to theme */
+    .message-user {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: #fff !important;
+    }
+    .message-ai {
+        background-color: var(--bs-card-bg) !important;
+        border: 1px solid var(--bs-card-border-color) !important;
+        color: var(--bs-body-color) !important;
+    }
+    [data-bs-theme="light"] .message-ai {
+        background-color: #f8f9fa !important;
+        border-color: #dee2e6 !important;
+        color: #212529 !important;
+    }
+    [data-bs-theme="dark"] .message-ai {
+        background-color: #2b3035 !important;
+        border-color: #3d4247 !important;
+        color: #e9ecef !important;
+    }
+    .message-text {
+        color: inherit !important;
+    }
+    .message-time {
+        color: var(--bs-secondary-color) !important;
     }
 </style>
 </head>
@@ -175,13 +451,13 @@
             <div class="col-lg-10">
                 <!-- Chat Card -->
                 <div class="card shadow mb-4">
-                    <div class="card-header bg-white">
+                    <div class="card-header">
                         <h5 class="mb-0">
                             <i class="bi bi-chat-dots"></i> Chat dengan AI
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div id="chatContainer" class="mb-3" style="height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem;">
+                        <div id="chatContainer" class="mb-3" style="height: 400px; overflow-y: auto; border: 1px solid var(--bs-border-color); border-radius: 0.375rem; padding: 1rem; background-color: var(--bs-body-bg);">
                             <div class="text-center text-muted">
                                 <i class="bi bi-robot display-4"></i>
                                 <p class="mt-2">Mulai percakapan dengan AI Assistant</p>
@@ -290,7 +566,7 @@
 
                 <!-- Info Card -->
                 <div class="card shadow">
-                    <div class="card-header bg-white">
+                    <div class="card-header">
                         <h6 class="mb-0">
                             <i class="bi bi-info-circle"></i> Informasi
                         </h6>
@@ -341,13 +617,13 @@
                 <div class="modal fade" id="chatHistoryModal" tabindex="-1">
                     <div class="modal-dialog modal-lg modal-dialog-scrollable">
                         <div class="modal-content">
-                            <div class="modal-header bg-light">
-                                <h5 class="modal-title text-dark">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
                                     <i class="bi bi-clock-history"></i> Riwayat Chat
                                 </h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
-                            <div class="modal-body bg-light">
+                            <div class="modal-body">
                                 <div id="chatHistoryList">
                                     <!-- Chat sessions akan di-load di sini -->
                                 </div>
@@ -398,8 +674,8 @@
                 <div class="modal fade" id="editMessageModal" tabindex="-1">
                     <div class="modal-dialog">
                         <div class="modal-content">
-                            <div class="modal-header bg-light">
-                                <h5 class="modal-title text-dark">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
                                     <i class="bi bi-pencil"></i> Edit Pesan
                                 </h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -457,7 +733,7 @@
                 <div class="modal fade" id="profileEditModal" tabindex="-1">
                     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                         <div class="modal-content">
-                            <div class="modal-header bg-light">
+                            <div class="modal-header">
                                 <h5 class="modal-title">
                                     <i class="bi bi-pencil-square"></i> Edit Profil
                                 </h5>
@@ -525,10 +801,10 @@
                                     <i class="bi bi-journal-text"></i> Catatan Saya
                                 </h5>
                                 <div class="d-flex gap-1">
-                                    <button class="btn btn-light btn-sm btn-nav" onclick="notesApp.exportNotes()" title="Unduh semua catatan (JSON)">
+                                    <button class="btn btn-outline-light btn-sm btn-nav" onclick="notesApp.exportNotes()" title="Unduh semua catatan (JSON)">
                                         <i class="bi bi-download"></i> <span class="d-none d-md-inline">Export</span>
                                     </button>
-                                    <label class="btn btn-light btn-sm btn-nav mb-0" title="Impor catatan dari file JSON">
+                                    <label class="btn btn-outline-light btn-sm btn-nav mb-0" title="Impor catatan dari file JSON">
                                         <i class="bi bi-upload"></i> <span class="d-none d-md-inline">Import</span>
                                         <input type="file" accept=".json,application/json" style="display: none;" onchange="importNotesFile(this)">
                                     </label>

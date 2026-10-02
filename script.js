@@ -799,9 +799,9 @@ function addMessage(message, sender, options = {}) {
     
     const messageContent = `
         <div class="max-width-70">
-            <div class="card ${sender === 'user' ? 'bg-primary text-white' : 'bg-light'}">
+            <div class="card ${sender === 'user' ? 'message-user' : 'message-ai'}">
                 <div class="card-body py-2">
-                    <small class="${sender === 'user' ? 'text-white' : 'text-muted'}">${sanitizedMessage}</small>
+                    <small class="message-text">${sanitizedMessage}</small>
                 </div>
             </div>
             ${sender === 'user' && options.messageIndex !== null && !options.isLoading ? `
@@ -828,7 +828,7 @@ function addMessage(message, sender, options = {}) {
                     </div>
                 </div>
             ` : ''}
-            <small class="text-muted ${sender === 'user' ? 'text-end' : ''}">${sender === 'user' ? 'You' : 'AI'}  ${messageTime}</small>
+            <small class="message-time ${sender === 'user' ? 'text-end' : ''}">${sender === 'user' ? 'You' : 'AI'}  ${messageTime}</small>
         </div>
     `;
     
@@ -2101,14 +2101,14 @@ function displayChatHistoryList(searchTerm = '') {
                 
                 ${messageCount > 0 ? `
                     <div class="mt-2">
-                        <small class="text-dark">Preview:</small>
-                        <div class="bg-light p-2 rounded mt-1" style="max-height: 100px; overflow-y: auto;">
+                        <small class="text-muted">Preview:</small>
+                        <div class="p-2 rounded mt-1" style="max-height: 100px; overflow-y: auto; background-color: var(--bs-card-bg); border: 1px solid var(--bs-border-color);">
                             ${session.messages.slice(0, 2).map(msg => `
-                                <div class="small ${msg.user ? 'text-primary' : 'text-dark'}">
+                                <div class="small ${msg.user ? 'text-primary' : ''}">
                                     <strong>${msg.user ? 'You:' : 'AI:'}</strong> ${msg.user || msg.ai}
                                 </div>
                             `).join('')}
-                            ${messageCount > 2 ? `<div class="small text-dark">... dan ${messageCount - 2} pesan lainnya</div>` : ''}
+                            ${messageCount > 2 ? `<div class="small text-muted">... dan ${messageCount - 2} pesan lainnya</div>` : ''}
                         </div>
                     </div>
                 ` : ''}
@@ -2128,7 +2128,7 @@ function displayChatHistoryList(searchTerm = '') {
     
     // Add summary at bottom
     html += `
-        <div class="mt-3 p-3 bg-light rounded">
+        <div class="mt-3 p-3 rounded" style="background-color: var(--bs-card-bg); border: 1px solid var(--bs-border-color);">
             <div class="row text-center">
                 <div class="col-4">
                     <div class="fw-bold">${chatSessions.length}</div>
@@ -3190,9 +3190,9 @@ function showTypingIndicator() {
     typingDiv.className = 'd-flex mb-3 justify-content-start';
     typingDiv.innerHTML = `
         <div class="max-width-70">
-            <div class="card bg-light">
+            <div class="card message-ai">
                 <div class="card-body py-2">
-                    <small class="text-muted">
+                    <small class="message-text">
                         <i class="bi bi-three-dots"></i> AI sedang mengetik...
                     </small>
                 </div>
@@ -3332,9 +3332,9 @@ function addMessageWithControls(message, sender, messageIndex = null) {
     
     const messageContent = `
         <div class="max-width-70">
-            <div class="card ${sender === 'user' ? 'bg-primary text-white' : 'bg-light'}">
+            <div class="card ${sender === 'user' ? 'message-user' : 'message-ai'}">
                 <div class="card-body py-2">
-                    <small class="${sender === 'user' ? 'text-white' : 'text-muted'}">${sanitizedMessage}</small>
+                    <small class="message-text">${sanitizedMessage}</small>
                 </div>
             </div>
             ${sender === 'user' && messageIndex !== null ? `
@@ -3359,7 +3359,7 @@ function addMessageWithControls(message, sender, messageIndex = null) {
                     </button>
                 </div>
             ` : ''}
-            <small class="text-muted ${sender === 'user' ? 'text-end' : ''}">${sender === 'user' ? 'You' : 'AI'}  ${messageTime}</small>
+            <small class="message-time ${sender === 'user' ? 'text-end' : ''}">${sender === 'user' ? 'You' : 'AI'}  ${messageTime}</small>
         </div>
     `;
     

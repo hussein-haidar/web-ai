@@ -283,13 +283,16 @@ const notesApp = {
             const date = formatNoteDate(n.updatedAt || n.createdAt);
             const color = n.color || '';
             const preview = snippet.length > 120 ? snippet.slice(0, 120) + '...' : snippet;
+            const cardBg = color ? color : 'var(--bs-card-bg)';
+            const cardBorder = color ? color : 'var(--bs-card-border-color)';
+            const badgeClass = color ? 'bg-dark' : 'bg-primary';
 
             return `
                 <div class="col-12 col-sm-6 col-lg-4">
-                    <div class="card note-card shadow-sm h-100" style="background-color: ${color || '#fff'}; cursor: pointer;" onclick="notesApp.openEditor('${attrNoteEscape(n.id)}')">
+                    <div class="card note-card shadow-sm h-100" style="background-color: ${cardBg}; border-color: ${cardBorder}; cursor: pointer;" onclick="notesApp.openEditor('${attrNoteEscape(n.id)}')">
                         <div class="card-body d-flex flex-column">
                             <div class="d-flex justify-content-between align-items-start mb-1">
-                                <span class="badge ${color ? 'bg-dark' : 'bg-primary'}">${category}</span>
+                                <span class="badge ${badgeClass}">${category}</span>
                                 <div class="btn-group btn-group-sm" onclick="event.stopPropagation()">
                                     <button class="btn btn-outline-secondary btn-sm" onclick="notesApp.togglePin('${attrNoteEscape(n.id)}')" title="${n.pinned ? 'Lepas semat' : 'Semat'}">
                                         <i class="bi ${n.pinned ? 'bi-pin-fill text-danger' : 'bi-pin'}"></i>
@@ -338,9 +341,13 @@ const notesApp = {
         if (swatches) {
             swatches.innerHTML = NOTE_COLORS.map(c => {
                 const active = (note.color || '') === c.value;
+                const isDefault = c.value === '';
+                const bgColor = isDefault ? '#ffffff' : c.value;
+                const borderColor = active ? '#0d6efd' : (isDefault ? '#6c757d' : '#dee2e6');
+                const checkIcon = active ? '<i class="bi bi-check-lg"></i>' : '&nbsp;';
                 return `<button type="button" class="note-color ${active ? 'active' : ''}"
-                    style="background-color: ${c.value || '#ffffff'}; border: 2px solid ${active ? '#0d6efd' : '#dee2e6'}; width: 34px; height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1; color: #212529; margin-right: 8px;"
-                    data-color="${c.value}" title="${c.name}" onclick="notesApp.pickColor(this)">${active ? '<i class="bi bi-check-lg"></i>' : '&nbsp;'}</button>`;
+                    style="background-color: ${bgColor}; border: 2px solid ${borderColor}; width: 34px; height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1; color: #212529; margin-right: 8px;"
+                    data-color="${c.value}" title="${c.name}" onclick="notesApp.pickColor(this)">${checkIcon}</button>`;
             }).join('');
         }
 
@@ -363,7 +370,8 @@ const notesApp = {
             const active = s === el;
             s.classList.toggle('active', active);
             s.innerHTML = active ? '<i class="bi bi-check-lg"></i>' : '&nbsp;';
-            s.style.borderColor = active ? '#0d6efd' : '#dee2e6';
+            const isDefault = s.dataset.color === '';
+            s.style.borderColor = active ? '#0d6efd' : (isDefault ? '#6c757d' : '#dee2e6');
         });
     },
 
