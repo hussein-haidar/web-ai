@@ -153,7 +153,6 @@ function updateAuthUI() {
                         </li>
                         <li><hr class="dropdown-divider my-1"></li>
                         <li><a class="dropdown-item" href="#" onclick="showProfileModal(); return false;"><i class="bi bi-person-circle"></i> Lihat Profil</a></li>
-                        <li><a class="dropdown-item" href="#" onclick="showEditProfileModal(); return false;"><i class="bi bi-pencil-square"></i> Edit Profil</a></li>
                         <li><hr class="dropdown-divider my-1"></li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                     </ul>
